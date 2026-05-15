@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Imports;
+
+use App\Models\Device;
+use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\SkipsOnError;
+use Maatwebsite\Excel\Concerns\SkipsOnFailure;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Validators\Failure;
+
+class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
+{
+    use Importable;
+
+    public array $failures = [];
+    public int $imported = 0;
+    public int $skipped = 0;
+
+    /** @var array<string,true>|null Lower-cased existing serial numbers (skip duplicates when serial provided). */
+    private ?array $existingSerials = null;
+
+    private function existingSerials(): array
+    {
+        return $this->existingSerials ??= Device::query()
+            ->whereNotNull('serial_number')
+            ->where('serial_number', '!=', '')
+            ->pluck('serial_number')
+            ->mapWithKeys(fn ($sn) => [strtolower(trim((string) $sn)) => true])
+            ->all();
+    }
+
+    public function model(array $row)
+    {
+        if (empty(array_filter($row))) {
+            return null;
+        }
+
+        $serial = trim((string) ($row['serial_number'] ?? ''));
+        if ($serial !== '' && isset($this->existingSerials()[strtolower($serial)])) {
+            $this->skipped++;
+            return null;
+        }
+        if ($serial !== '') {
+            $this->existingSerials[strtolower($serial)] = true;
+        }
+
+        return new Device([
+            'item_name'         => trim((string) ($row['item_name'] ?? '')),
+            'serial_number'     => $serial !== '' ? $serial : null,
+            'location'          => $row['location'] ?? null,
+            'qty'               => (int) ($row['qty'] ?? 1) ?: 1,
+            'status'            => $row['status'] ?? 'Free',
+            'description'       => $row['description'] ?? null,
+            'vendor'            => $row['vendor'] ?? null,
+            'purchased_date'    => $this->parseDate($row['purchased_date'] ?? null),
+            'warranty'          => $row['warranty'] ?? null,
+            'delivery_date'     => $this->parseDate($row['delivery_date'] ?? null),
+            'delivery_location' => $row['delivery_location'] ?? null,
+            'remark'            => $row['remark'] ?? null,
+            'modified_by'       => Auth::user()?->name ?? 'Import',
+        ]);
+    }
+
+    private function parseDate($value): ?string
+    {
+        if (! $value) return null;
+
+        if (is_numeric($value)) {
+            try {
+                return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'item_name' => 'required|string|max:255',
+            'qty'       => 'nullable|integer|min:1',
+            'status'    => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Device::STATUSES)],
+        ];
+    }
+
+    public function batchSize(): int
+    {
+        return 200;
+    }
+
+    public function chunkSize(): int
+    {
+        return 200;
+    }
+
+    public function onFailure(Failure ...$failures): void
+    {
+        foreach ($failures as $failure) {
+            $this->failures[] = [
+                'row'       => $failure->row(),
+                'attribute' => $failure->attribute(),
+                'errors'    => $failure->errors(),
+                'values'    => $failure->values(),
+            ];
+        }
+    }
+
+    public function onError(\Throwable $e): void
+    {
+        $this->failures[] = [
+            'row'       => null,
+            'attribute' => 'general',
+            'errors'    => [$e->getMessage()],
+            'values'    => [],
+        ];
+    }
+}
