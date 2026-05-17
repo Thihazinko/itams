@@ -3,12 +3,6 @@
     $editing = isset($user) && $user->exists;
     $currentRole = old('role', $user->role ?? 'user');
     $modules = \App\Models\User::MODULES;
-    $permFields = [
-        'pc_assets'          => 'can_pc_assets',
-        'subscriptions'      => 'can_subscriptions',
-        'licenses_contracts' => 'can_licenses_contracts',
-        'devices'            => 'can_devices',
-    ];
     $moduleIcons = [
         'pc_assets'          => 'bi-pc-display',
         'devices'            => 'bi-hdd-network',
@@ -85,7 +79,7 @@
             <div class="card-header bg-transparent d-flex align-items-center gap-2">
                 <i class="bi bi-shield-check text-primary"></i>
                 <strong>Module Access</strong>
-                <span class="text-muted small ms-2 d-none d-md-inline">Admins automatically have all modules.</span>
+                <span class="text-muted small ms-2 d-none d-md-inline">View lets the user browse; Edit also lets them create, update, and delete.</span>
             </div>
             <div class="card-body">
                 <div id="adminNotice" class="alert alert-warning d-flex align-items-center gap-2 small mb-3 {{ $currentRole === 'admin' ? '' : 'd-none' }}">
@@ -95,20 +89,42 @@
                 <div class="row g-2" id="moduleGrid">
                     @foreach($modules as $key => $label)
                         @php
-                            $field = $permFields[$key];
+                            $viewField = "can_view_{$key}";
+                            $editField = "can_edit_{$key}";
                             $icon  = $moduleIcons[$key] ?? 'bi-box';
-                            $checked = old($field, $editing ? $user->{$field} : false);
+                            $editChecked = (bool) old($editField, $editing ? $user->{$editField} : false);
+                            $viewChecked = (bool) old($viewField, $editing ? $user->{$viewField} : false) || $editChecked;
                         @endphp
                         <div class="col-md-6">
-                            <label class="module-card {{ $checked ? 'is-on' : '' }}">
-                                <input type="hidden" name="{{ $field }}" value="0">
-                                <input type="checkbox" name="{{ $field }}" value="1" class="form-check-input module-toggle" data-target="{{ $field }}" @checked($checked)>
+                            <div class="module-card {{ $viewChecked || $editChecked ? 'is-on' : '' }}">
                                 <span class="module-icon"><i class="bi {{ $icon }}"></i></span>
-                                <span class="module-meta">
+                                <div class="module-meta">
                                     <span class="module-name">{{ $label }}</span>
-                                    <span class="module-state text-muted small">Granted</span>
-                                </span>
-                            </label>
+                                    <span class="module-state text-muted small"></span>
+                                </div>
+                                <div class="module-perms">
+                                    <label class="perm-toggle" title="Allow viewing this module">
+                                        <input type="hidden" name="{{ $viewField }}" value="0">
+                                        <input type="checkbox"
+                                               name="{{ $viewField }}"
+                                               value="1"
+                                               class="form-check-input perm-view"
+                                               data-module="{{ $key }}"
+                                               @checked($viewChecked)>
+                                        <span>View</span>
+                                    </label>
+                                    <label class="perm-toggle" title="Allow create, update and delete">
+                                        <input type="hidden" name="{{ $editField }}" value="0">
+                                        <input type="checkbox"
+                                               name="{{ $editField }}"
+                                               value="1"
+                                               class="form-check-input perm-edit"
+                                               data-module="{{ $key }}"
+                                               @checked($editChecked)>
+                                        <span>Edit</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -151,14 +167,12 @@
         border-radius: .65rem;
         border: 1px solid rgba(31, 38, 135, 0.1);
         background: #fff;
-        cursor: pointer;
         transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
         margin: 0;
         position: relative;
     }
     .module-card:hover { border-color: rgba(13, 110, 253, 0.25); background: rgba(13, 110, 253, 0.02); }
     .module-card.is-on { border-color: rgba(13, 110, 253, 0.35); background: rgba(13, 110, 253, 0.05); }
-    .module-card .module-toggle { margin: 0; flex-shrink: 0; }
     .module-card .module-icon {
         width: 32px; height: 32px;
         border-radius: .45rem;
@@ -173,19 +187,41 @@
     .module-card .module-meta { flex-grow: 1; min-width: 0; line-height: 1.2; }
     .module-card .module-name { font-weight: 600; font-size: .88rem; display: block; }
     .module-card .module-state { font-size: .7rem; display: block; }
-    .module-card:not(.is-on) .module-state { color: #94a3b8 !important; }
-    .module-card:not(.is-on) .module-state::before { content: 'Denied'; }
-    .module-card.is-on .module-state::before { content: 'Granted'; color: #198754; }
-    .module-card.is-on .module-state { color: #198754 !important; }
-    .module-card .module-state { font-size: 0; }
     .module-card .module-state::before { font-size: .7rem; }
-    .module-card.is-disabled { opacity: .5; cursor: not-allowed; }
+    .module-card[data-state="none"] .module-state::before { content: 'No access'; color: #94a3b8; }
+    .module-card[data-state="view"] .module-state::before { content: 'View only'; color: #0d6efd; }
+    .module-card[data-state="edit"] .module-state::before { content: 'View + Edit'; color: #198754; }
+    .module-card .module-perms {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        flex-shrink: 0;
+    }
+    .module-card .perm-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .78rem;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        margin: 0;
+        user-select: none;
+    }
+    .module-card .perm-toggle input[type="checkbox"] { margin: 0; cursor: pointer; }
+    .module-card .perm-toggle input[type="checkbox"]:checked + span { color: #0d6efd; font-weight: 600; }
+    .module-card.is-disabled { opacity: .5; }
     .module-card.is-disabled input { pointer-events: none; }
+    .module-card.is-disabled .perm-toggle { cursor: not-allowed; }
 
     [data-bs-theme="dark"] .module-card { background: rgba(30, 36, 48, 0.7); border-color: rgba(255, 255, 255, 0.08); }
     [data-bs-theme="dark"] .module-card:hover { background: rgba(147, 197, 253, 0.05); border-color: rgba(147, 197, 253, 0.25); }
     [data-bs-theme="dark"] .module-card.is-on { background: rgba(147, 197, 253, 0.1); border-color: rgba(147, 197, 253, 0.35); }
     [data-bs-theme="dark"] .module-card .module-icon { background: rgba(147, 197, 253, 0.15); color: #93c5fd; }
+    [data-bs-theme="dark"] .module-card .perm-toggle { color: #94a3b8; }
+    [data-bs-theme="dark"] .module-card .perm-toggle input[type="checkbox"]:checked + span { color: #93c5fd; }
+    [data-bs-theme="dark"] .module-card[data-state="view"] .module-state::before { color: #93c5fd; }
+    [data-bs-theme="dark"] .module-card[data-state="edit"] .module-state::before { color: #6ee7b7; }
 </style>
 
 <script>
@@ -202,12 +238,27 @@
             });
         }
 
-        // Module card toggle visual sync
-        document.querySelectorAll('.module-toggle').forEach(input => {
-            const card = input.closest('.module-card');
-            input.addEventListener('change', () => {
-                card.classList.toggle('is-on', input.checked);
-            });
+        // Module card: Edit implies View. View is auto-checked and locked while Edit is on.
+        function syncCard(card) {
+            const viewInput = card.querySelector('.perm-view');
+            const editInput = card.querySelector('.perm-edit');
+            if (!viewInput || !editInput) return;
+            if (editInput.checked) {
+                viewInput.checked = true;
+                viewInput.disabled = true;
+            } else {
+                viewInput.disabled = false;
+            }
+            let state = 'none';
+            if (editInput.checked) state = 'edit';
+            else if (viewInput.checked) state = 'view';
+            card.dataset.state = state;
+            card.classList.toggle('is-on', state !== 'none');
+        }
+        document.querySelectorAll('#moduleGrid .module-card').forEach(card => {
+            const inputs = card.querySelectorAll('.perm-view, .perm-edit');
+            inputs.forEach(i => i.addEventListener('change', () => syncCard(card)));
+            syncCard(card);
         });
 
         // Role-driven disable of module checkboxes (admins implicitly get everything)
@@ -216,7 +267,18 @@
         function syncRole() {
             const isAdmin = roleSel.value === 'admin';
             adminNotice.classList.toggle('d-none', !isAdmin);
-            document.querySelectorAll('.module-card').forEach(c => c.classList.toggle('is-disabled', isAdmin));
+            document.querySelectorAll('.module-card').forEach(c => {
+                c.classList.toggle('is-disabled', isAdmin);
+                c.querySelectorAll('.perm-view, .perm-edit').forEach(i => {
+                    if (isAdmin) {
+                        i.disabled = true;
+                    } else {
+                        // Re-enable, then re-apply edit-implies-view lock.
+                        i.disabled = false;
+                        syncCard(c);
+                    }
+                });
+            });
         }
         if (roleSel) {
             roleSel.addEventListener('change', syncRole);

@@ -23,10 +23,14 @@ class User extends Authenticatable
         'password',
         'role',
         'avatar',
-        'can_pc_assets',
-        'can_subscriptions',
-        'can_licenses_contracts',
-        'can_devices',
+        'can_view_pc_assets',
+        'can_edit_pc_assets',
+        'can_view_subscriptions',
+        'can_edit_subscriptions',
+        'can_view_licenses_contracts',
+        'can_edit_licenses_contracts',
+        'can_view_devices',
+        'can_edit_devices',
     ];
 
     protected $hidden = [
@@ -39,10 +43,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'can_pc_assets' => 'boolean',
-            'can_subscriptions' => 'boolean',
-            'can_licenses_contracts' => 'boolean',
-            'can_devices' => 'boolean',
+            'can_view_pc_assets' => 'boolean',
+            'can_edit_pc_assets' => 'boolean',
+            'can_view_subscriptions' => 'boolean',
+            'can_edit_subscriptions' => 'boolean',
+            'can_view_licenses_contracts' => 'boolean',
+            'can_edit_licenses_contracts' => 'boolean',
+            'can_view_devices' => 'boolean',
+            'can_edit_devices' => 'boolean',
         ];
     }
 
@@ -51,18 +59,34 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    public function canAccess(string $module): bool
+    public function canView(string $module): bool
     {
         if ($this->isAdmin()) {
             return true;
         }
 
-        return match ($module) {
-            'pc_assets'          => (bool) $this->can_pc_assets,
-            'subscriptions'      => (bool) $this->can_subscriptions,
-            'licenses_contracts' => (bool) $this->can_licenses_contracts,
-            'devices'            => (bool) $this->can_devices,
-            default              => false,
-        };
+        if (! array_key_exists($module, self::MODULES)) {
+            return false;
+        }
+
+        return (bool) $this->{"can_view_{$module}"} || (bool) $this->{"can_edit_{$module}"};
+    }
+
+    public function canEdit(string $module): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (! array_key_exists($module, self::MODULES)) {
+            return false;
+        }
+
+        return (bool) $this->{"can_edit_{$module}"};
+    }
+
+    public function canAccess(string $module, string $action = 'view'): bool
+    {
+        return $action === 'edit' ? $this->canEdit($module) : $this->canView($module);
     }
 }

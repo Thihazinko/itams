@@ -23,55 +23,57 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::middleware('module:pc_assets')->group(function () {
+    // PC Master
+    Route::middleware('module:pc_assets,view')->group(function () {
         Route::get('pc-assets/export', [PcAssetController::class, 'export'])->name('pc-assets.export');
         Route::get('pc-assets/template', [PcAssetController::class, 'template'])->name('pc-assets.template');
-        // Admin write routes must be declared before the {pc_asset} show route below,
-        // otherwise GET /pc-assets/create gets matched by show with pc_asset='create' and 404s.
-        Route::middleware('admin')->group(function () {
-            Route::post('pc-assets/import', [PcAssetController::class, 'import'])->name('pc-assets.import');
-            Route::delete('pc-assets/bulk', [PcAssetController::class, 'bulkDestroy'])->name('pc-assets.bulk-destroy');
-            Route::resource('pc-assets', PcAssetController::class)->except(['index', 'show']);
-        });
         Route::resource('pc-assets', PcAssetController::class)->only(['index', 'show']);
     });
+    Route::middleware('module:pc_assets,edit')->group(function () {
+        Route::post('pc-assets/import', [PcAssetController::class, 'import'])->name('pc-assets.import');
+        Route::delete('pc-assets/bulk', [PcAssetController::class, 'bulkDestroy'])->name('pc-assets.bulk-destroy');
+        Route::resource('pc-assets', PcAssetController::class)->except(['index', 'show']);
+    });
 
-    Route::middleware('module:subscriptions')->group(function () {
+    // Subscriptions
+    Route::middleware('module:subscriptions,view')->group(function () {
         Route::get('subscriptions/export', [SubscriptionController::class, 'export'])->name('subscriptions.export');
         Route::get('subscriptions/template', [SubscriptionController::class, 'template'])->name('subscriptions.template');
         Route::resource('subscriptions', SubscriptionController::class)->only(['index']);
-        Route::middleware('admin')->group(function () {
-            Route::post('subscriptions/import', [SubscriptionController::class, 'import'])->name('subscriptions.import');
-            Route::delete('subscriptions/bulk', [SubscriptionController::class, 'bulkDestroy'])->name('subscriptions.bulk-destroy');
-            Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'markRenewed'])->name('subscriptions.renew');
-            Route::resource('subscriptions', SubscriptionController::class)->except(['index', 'show']);
-        });
+    });
+    Route::middleware('module:subscriptions,edit')->group(function () {
+        Route::post('subscriptions/import', [SubscriptionController::class, 'import'])->name('subscriptions.import');
+        Route::delete('subscriptions/bulk', [SubscriptionController::class, 'bulkDestroy'])->name('subscriptions.bulk-destroy');
+        Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'markRenewed'])->name('subscriptions.renew');
+        Route::resource('subscriptions', SubscriptionController::class)->except(['index', 'show']);
     });
 
-    Route::middleware('module:licenses_contracts')->group(function () {
+    // Licenses & Contracts
+    Route::middleware('module:licenses_contracts,view')->group(function () {
         Route::get('licenses-contracts/export', [LicenseContractController::class, 'export'])->name('licenses-contracts.export');
         Route::get('licenses-contracts/template', [LicenseContractController::class, 'template'])->name('licenses-contracts.template');
         Route::resource('licenses-contracts', LicenseContractController::class)
             ->parameters(['licenses-contracts' => 'licenses_contract'])
             ->only(['index']);
-        Route::middleware('admin')->group(function () {
-            Route::post('licenses-contracts/import', [LicenseContractController::class, 'import'])->name('licenses-contracts.import');
-            Route::delete('licenses-contracts/bulk', [LicenseContractController::class, 'bulkDestroy'])->name('licenses-contracts.bulk-destroy');
-            Route::resource('licenses-contracts', LicenseContractController::class)
-                ->parameters(['licenses-contracts' => 'licenses_contract'])
-                ->except(['index', 'show']);
-        });
+    });
+    Route::middleware('module:licenses_contracts,edit')->group(function () {
+        Route::post('licenses-contracts/import', [LicenseContractController::class, 'import'])->name('licenses-contracts.import');
+        Route::delete('licenses-contracts/bulk', [LicenseContractController::class, 'bulkDestroy'])->name('licenses-contracts.bulk-destroy');
+        Route::resource('licenses-contracts', LicenseContractController::class)
+            ->parameters(['licenses-contracts' => 'licenses_contract'])
+            ->except(['index', 'show']);
     });
 
-    Route::middleware('module:devices')->group(function () {
+    // Devices
+    Route::middleware('module:devices,view')->group(function () {
         Route::get('devices/export', [DeviceController::class, 'export'])->name('devices.export');
         Route::get('devices/template', [DeviceController::class, 'template'])->name('devices.template');
-        Route::middleware('admin')->group(function () {
-            Route::post('devices/import', [DeviceController::class, 'import'])->name('devices.import');
-            Route::delete('devices/bulk', [DeviceController::class, 'bulkDestroy'])->name('devices.bulk-destroy');
-            Route::resource('devices', DeviceController::class)->except(['index', 'show']);
-        });
         Route::resource('devices', DeviceController::class)->only(['index', 'show']);
+    });
+    Route::middleware('module:devices,edit')->group(function () {
+        Route::post('devices/import', [DeviceController::class, 'import'])->name('devices.import');
+        Route::delete('devices/bulk', [DeviceController::class, 'bulkDestroy'])->name('devices.bulk-destroy');
+        Route::resource('devices', DeviceController::class)->except(['index', 'show']);
     });
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

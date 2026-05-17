@@ -129,16 +129,33 @@
                                 <span class="text-muted small">All modules</span>
                             @else
                                 @php $modules = [
-                                    'pc-display' => ['PC', $u->can_pc_assets],
-                                    'hdd-network' => ['Devices', $u->can_devices],
-                                    'calendar-event' => ['Subs', $u->can_subscriptions],
-                                    'file-earmark-text' => ['L&C', $u->can_licenses_contracts],
+                                    'pc-display'        => ['PC',      'pc_assets'],
+                                    'hdd-network'       => ['Devices', 'devices'],
+                                    'calendar-event'    => ['Subs',    'subscriptions'],
+                                    'file-earmark-text' => ['L&C',     'licenses_contracts'],
                                 ]; @endphp
                                 <div class="d-flex gap-1 flex-wrap">
-                                    @foreach($modules as $icon => [$label, $on])
-                                        <span class="badge {{ $on ? 'bg-success-subtle text-success-emphasis' : 'bg-light text-muted border' }}"
-                                              title="{{ $label }}: {{ $on ? 'granted' : 'denied' }}">
+                                    @foreach($modules as $icon => [$label, $key])
+                                        @php
+                                            $canEdit = (bool) $u->{"can_edit_{$key}"};
+                                            $canView = (bool) $u->{"can_view_{$key}"} || $canEdit;
+                                            if ($canEdit) {
+                                                $cls = 'bg-success-subtle text-success-emphasis';
+                                                $tag = 'V·E';
+                                                $title = "{$label}: view + edit";
+                                            } elseif ($canView) {
+                                                $cls = 'bg-primary-subtle text-primary-emphasis';
+                                                $tag = 'V';
+                                                $title = "{$label}: view only";
+                                            } else {
+                                                $cls = 'bg-light text-muted border';
+                                                $tag = '—';
+                                                $title = "{$label}: no access";
+                                            }
+                                        @endphp
+                                        <span class="badge {{ $cls }}" title="{{ $title }}">
                                             <i class="bi bi-{{ $icon }}"></i> {{ $label }}
+                                            <span class="ms-1 opacity-75" style="font-size:.6rem;">{{ $tag }}</span>
                                         </span>
                                     @endforeach
                                 </div>

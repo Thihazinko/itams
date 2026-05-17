@@ -10,6 +10,17 @@ use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
+    private const PERM_FIELDS = [
+        'can_view_pc_assets',
+        'can_edit_pc_assets',
+        'can_view_subscriptions',
+        'can_edit_subscriptions',
+        'can_view_licenses_contracts',
+        'can_edit_licenses_contracts',
+        'can_view_devices',
+        'can_edit_devices',
+    ];
+
     public function index(Request $request)
     {
         $query = User::query();
@@ -43,26 +54,24 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => ['required', Password::min(6)],
             'role' => 'required|in:admin,user',
             'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'can_pc_assets' => 'sometimes|boolean',
-            'can_subscriptions' => 'sometimes|boolean',
-            'can_licenses_contracts' => 'sometimes|boolean',
-            'can_devices' => 'sometimes|boolean',
-        ]);
+        ];
+        foreach (self::PERM_FIELDS as $field) {
+            $rules[$field] = 'sometimes|boolean';
+        }
+
+        $data = $request->validate($rules);
 
         if ($request->hasFile('avatar')) {
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $data['can_pc_assets'] = $request->boolean('can_pc_assets');
-        $data['can_subscriptions'] = $request->boolean('can_subscriptions');
-        $data['can_licenses_contracts'] = $request->boolean('can_licenses_contracts');
-        $data['can_devices'] = $request->boolean('can_devices');
+        $this->applyPermissions($request, $data);
 
         $user = User::create($data);
 
@@ -82,22 +91,20 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $data = $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => "required|email|unique:users,email,{$user->id}",
             'password' => ['nullable', Password::min(6)],
             'role' => 'required|in:admin,user',
             'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'can_pc_assets' => 'sometimes|boolean',
-            'can_subscriptions' => 'sometimes|boolean',
-            'can_licenses_contracts' => 'sometimes|boolean',
-            'can_devices' => 'sometimes|boolean',
-        ]);
+        ];
+        foreach (self::PERM_FIELDS as $field) {
+            $rules[$field] = 'sometimes|boolean';
+        }
 
-        $data['can_pc_assets'] = $request->boolean('can_pc_assets');
-        $data['can_subscriptions'] = $request->boolean('can_subscriptions');
-        $data['can_licenses_contracts'] = $request->boolean('can_licenses_contracts');
-        $data['can_devices'] = $request->boolean('can_devices');
+        $data = $request->validate($rules);
+
+        $this->applyPermissions($request, $data);
 
         if (empty($data['password'])) {
             unset($data['password']);
@@ -152,5 +159,17 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'User deleted.');
+    }
+
+    private function applyPermissions(Request $request, array &$data): void
+    {
+        foreach (array_keys(User::MODULES) as $module) {
+            $editKey = "can_edit_{$module}";
+            $viewKey = "can_view_{$module}";
+            $edit = $request->boolean($editKey);
+            $view = $request->boolean($viewKey) || $edit;
+            $data[$viewKey] = $view;
+            $data[$editKey] = $edit;
+        }
     }
 }
