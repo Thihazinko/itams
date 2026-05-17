@@ -365,16 +365,27 @@
                                 </td>
                                 <td><span class="badge bg-{{ $rsBadge }}-subtle text-{{ $rsBadge }}-emphasis">{{ $sub->renewal_status }}</span></td>
                                 <td class="text-end text-nowrap pe-3">
+                                    @php
+                                        $subParts = [];
+                                        if ($sub->service_type) $subParts[] = $sub->service_type;
+                                        if ($sub->vendor_name)  $subParts[] = $sub->vendor_name;
+                                        if ($sub->expire_date)  $subParts[] = 'expires ' . $sub->expire_date->format('Y-m-d');
+                                        $subDetail = implode(' · ', $subParts);
+                                    @endphp
                                     @if($sub->renewal_status !== 'Renewed' && $isAdmin)
                                     <button type="button" class="btn-icon-soft sub-mark-renewed text-success"
                                             title="Mark renewed" aria-label="Mark renewed"
-                                            data-id="{{ $sub->id }}" data-label="{{ $sub->subscription_name }}"><i class="bi bi-check2-circle"></i></button>
+                                            data-id="{{ $sub->id }}"
+                                            data-label="{{ $sub->subscription_name }}"
+                                            data-detail="{{ $subDetail }}"><i class="bi bi-check2-circle"></i></button>
                                     @endif
                                     <a href="{{ route('subscriptions.edit', $sub) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     @if($isAdmin)
                                     <button type="button" class="btn-icon-soft text-danger sub-delete-single"
                                             title="Delete" aria-label="Delete"
-                                            data-id="{{ $sub->id }}" data-label="{{ $sub->subscription_name }}"><i class="bi bi-trash"></i></button>
+                                            data-id="{{ $sub->id }}"
+                                            data-label="{{ $sub->subscription_name }}"
+                                            data-detail="{{ $subDetail }}"><i class="bi bi-trash"></i></button>
                                     @endif
                                 </td>
                             </tr>
@@ -509,37 +520,68 @@
     document.addEventListener('submit', (e) => {
         const form = e.target.closest('#subBulkForm');
         if (!form) return;
+        if (form.dataset.bulkConfirmed === '1') return;
         const selected = document.querySelectorAll('.sub-row-check:checked').length;
         if (selected === 0) {
             e.preventDefault();
             alert('Select at least one subscription to delete.');
             return;
         }
-        if (!confirm(`Delete ${selected} selected subscription(s)? This cannot be undone.`)) {
-            e.preventDefault();
-        }
+        e.preventDefault();
+        appConfirm({
+            title: `Delete ${selected} subscription(s)?`,
+            message: `You are about to permanently delete <strong>${selected}</strong> selected subscription record(s).`,
+            note: 'This action cannot be undone.',
+            confirmLabel: 'Delete all',
+        }).then((ok) => {
+            if (!ok) return;
+            form.dataset.bulkConfirmed = '1';
+            form.submit();
+        });
     });
 
     // Single delete
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.sub-delete-single');
         if (!btn) return;
-        if (!confirm(`Delete subscription "${btn.dataset.label}"?`)) return;
-        const form = document.getElementById('subSingleDeleteForm');
-        if (!form) return;
-        form.action = `{{ url('subscriptions') }}/${btn.dataset.id}`;
-        form.submit();
+        const detail = btn.dataset.detail
+            ? `<br><small class="text-muted">${appHtmlEscape(btn.dataset.detail)}</small>`
+            : '';
+        appConfirm({
+            title: 'Delete this subscription?',
+            message: `You are about to permanently delete <strong>${appHtmlEscape(btn.dataset.label)}</strong>.${detail}`,
+            note: 'This action cannot be undone.',
+            confirmLabel: 'Delete',
+        }).then((ok) => {
+            if (!ok) return;
+            const form = document.getElementById('subSingleDeleteForm');
+            if (!form) return;
+            form.action = `{{ url('subscriptions') }}/${btn.dataset.id}`;
+            form.submit();
+        });
     });
 
     // Mark renewed
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.sub-mark-renewed');
         if (!btn) return;
-        if (!confirm(`Mark subscription "${btn.dataset.label}" as renewed?`)) return;
-        const form = document.getElementById('subRenewForm');
-        if (!form) return;
-        form.action = `{{ url('subscriptions') }}/${btn.dataset.id}/renew`;
-        form.submit();
+        const detail = btn.dataset.detail
+            ? `<br><small class="text-muted">${appHtmlEscape(btn.dataset.detail)}</small>`
+            : '';
+        appConfirm({
+            tone: 'success',
+            icon: 'bi-arrow-clockwise',
+            title: 'Mark as renewed?',
+            message: `Mark <strong>${appHtmlEscape(btn.dataset.label)}</strong> as renewed.${detail}`,
+            note: 'The subscription will move out of pending reminders.',
+            confirmLabel: 'Mark renewed',
+        }).then((ok) => {
+            if (!ok) return;
+            const form = document.getElementById('subRenewForm');
+            if (!form) return;
+            form.action = `{{ url('subscriptions') }}/${btn.dataset.id}/renew`;
+            form.submit();
+        });
     });
 
     window.addEventListener('popstate', () => {

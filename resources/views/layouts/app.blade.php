@@ -205,7 +205,6 @@
             min-width: 18px;
             height: 18px;
             padding: 0 5px;
-            background: #ef4444;
             color: #fff;
             font-size: 0.62rem;
             font-weight: 700;
@@ -213,7 +212,29 @@
             text-align: center;
             border-radius: 999px;
             border: 2px solid rgba(255, 255, 255, 0.95);
-            box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+            background: #0d6efd;
+            box-shadow: 0 1px 3px rgba(13, 110, 253, 0.3);
+        }
+        .topbar-btn .notify-dot--upcoming {
+            background: #0d6efd;
+            box-shadow: 0 1px 3px rgba(13, 110, 253, 0.3);
+        }
+        .topbar-btn .notify-dot--soon {
+            background: #f59e0b;
+            box-shadow: 0 1px 3px rgba(245, 158, 11, 0.35);
+        }
+        .topbar-btn .notify-dot--urgent {
+            background: #ef4444;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+            animation: notify-pulse 2s ease-out infinite;
+        }
+        @keyframes notify-pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+            70%  { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .topbar-btn .notify-dot--urgent { animation: none; box-shadow: 0 1px 3px rgba(239, 68, 68, 0.35); }
         }
 
         .user-menu-btn {
@@ -954,6 +975,55 @@
             border-color: rgba(255, 255, 255, 0.08);
         }
 
+        /* Shared confirm modal (window.appConfirm) */
+        #appConfirmModal .modal-content {
+            border: 0;
+            border-radius: .9rem;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+            overflow: hidden;
+        }
+        #appConfirmModal .modal-body { padding: 1.75rem 1.75rem 1rem; }
+        #appConfirmModal .modal-footer { padding: 1rem 1.75rem 1.5rem; }
+        #appConfirmModal .app-confirm-icon {
+            width: 64px; height: 64px;
+            margin: 0 auto;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.85rem;
+        }
+        #appConfirmModal .app-confirm-icon--danger  { background: rgba(239, 68, 68, 0.12);  color: #dc2626; }
+        #appConfirmModal .app-confirm-icon--warning { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+        #appConfirmModal .app-confirm-icon--primary { background: rgba(13, 110, 253, 0.12); color: #0d6efd; }
+        #appConfirmModal .app-confirm-icon--success { background: rgba(16, 185, 129, 0.14); color: #047857; }
+        #appConfirmModal .app-confirm-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0 0 .35rem;
+        }
+        #appConfirmModal .app-confirm-message { font-size: .9rem; color: #475569; margin: 0; }
+        #appConfirmModal .app-confirm-message strong,
+        #appConfirmModal .app-confirm-message code {
+            color: #0f172a;
+            background: rgba(15, 23, 42, 0.05);
+            padding: .05rem .3rem;
+            border-radius: .25rem;
+            font-weight: 600;
+        }
+        #appConfirmModal .app-confirm-note {
+            font-size: .78rem;
+            color: #94a3b8;
+            margin: .7rem 0 0;
+        }
+        #appConfirmModal .btn { font-weight: 600; min-width: 100px; }
+        [data-bs-theme="dark"] #appConfirmModal .modal-content { background: #1a1f29; color: #e9ecef; }
+        [data-bs-theme="dark"] #appConfirmModal .app-confirm-message { color: #cbd5e0; }
+        [data-bs-theme="dark"] #appConfirmModal .app-confirm-message strong,
+        [data-bs-theme="dark"] #appConfirmModal .app-confirm-message code {
+            color: #f1f5f9; background: rgba(255, 255, 255, 0.08);
+        }
+        [data-bs-theme="dark"] #appConfirmModal .app-confirm-note { color: #64748b; }
     </style>
 </head>
 <body>
@@ -1032,7 +1102,23 @@
                 <i class="bi bi-list"></i>
             </button>
             @php
-                $unreadNotifications = \App\Models\Notification::whereNull('read_at')->count();
+                $expirySummary = \App\Support\ExpiryNotificationCounter::summary(auth()->user());
+                $expiryTotal   = (int) $expirySummary['total'];
+                $expiryOverdue = (int) $expirySummary['overdue'];
+                $expiryDueSoon = (int) $expirySummary['due_soon'];
+
+                // Badge tone: red = something is overdue, amber = due in <=7d, blue = upcoming only.
+                $expiryTone = $expiryOverdue > 0 ? 'urgent' : ($expiryDueSoon > 0 ? 'soon' : 'upcoming');
+
+                $expiryParts = [];
+                if ($expiryOverdue > 0) $expiryParts[] = "{$expiryOverdue} overdue";
+                if ($expiryDueSoon > 0) $expiryParts[] = "{$expiryDueSoon} due this week";
+                $upcomingOnly = $expiryTotal - $expiryOverdue - $expiryDueSoon;
+                if ($upcomingOnly > 0) $expiryParts[] = "{$upcomingOnly} upcoming";
+                $expiryTooltip = $expiryTotal === 0
+                    ? 'Notifications — all caught up'
+                    : 'Notifications — ' . implode(' · ', $expiryParts);
+
                 $authUser = auth()->user();
                 $initial = strtoupper(substr($authUser->name, 0, 1));
             @endphp
@@ -1042,11 +1128,12 @@
                 </button>
                 <a href="{{ route('notifications.index') }}"
                    class="topbar-btn {{ request()->routeIs('notifications.*') ? 'active' : '' }}"
-                   title="Notifications" aria-label="Notifications">
-                    <i class="bi bi-bell"></i>
-                    @if($unreadNotifications > 0)
-                        <span class="notify-dot" aria-label="{{ $unreadNotifications }} unread notifications">
-                            {{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}
+                   title="{{ $expiryTooltip }}"
+                   aria-label="{{ $expiryTooltip }}">
+                    <i class="bi {{ $expiryOverdue > 0 ? 'bi-bell-fill' : 'bi-bell' }}"></i>
+                    @if($expiryTotal > 0)
+                        <span class="notify-dot notify-dot--{{ $expiryTone }}">
+                            {{ $expiryTotal > 99 ? '99+' : $expiryTotal }}
                         </span>
                     @endif
                 </a>
@@ -1143,6 +1230,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
+            @if(session('warning'))
+                <div class="alert alert-warning alert-dismissible fade show">
+                    {{ session('warning') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
             @yield('content')
         </div>
     </div>
@@ -1228,6 +1321,117 @@
             }
         })();
     </script>
+
+    {{-- Shared confirmation modal: window.appConfirm({title, message, note, tone, icon, confirmLabel}) returns Promise<boolean>. --}}
+    @auth
+    <div class="modal fade" id="appConfirmModal" tabindex="-1" aria-labelledby="appConfirmTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="app-confirm-icon app-confirm-icon--danger mb-3"><i class="bi bi-trash-fill"></i></div>
+                    <h5 class="app-confirm-title" id="appConfirmTitle">Are you sure?</h5>
+                    <p class="app-confirm-message"></p>
+                    <p class="app-confirm-note d-none"></p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center gap-2">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger app-confirm-action">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const modalEl = document.getElementById('appConfirmModal');
+            if (!modalEl || typeof bootstrap === 'undefined') return;
+
+            const iconBox  = modalEl.querySelector('.app-confirm-icon');
+            const iconEl   = iconBox.querySelector('i');
+            const titleEl  = modalEl.querySelector('.app-confirm-title');
+            const msgEl    = modalEl.querySelector('.app-confirm-message');
+            const noteEl   = modalEl.querySelector('.app-confirm-note');
+            const cancelEl = modalEl.querySelector('[data-bs-dismiss="modal"]');
+            const actionEl = modalEl.querySelector('.app-confirm-action');
+            const bsModal  = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+            const TONE_CLASS = { danger: 'btn-danger', warning: 'btn-warning', primary: 'btn-primary', success: 'btn-success' };
+            const DEFAULT_ICON = {
+                danger: 'bi-exclamation-triangle-fill',
+                warning: 'bi-exclamation-circle-fill',
+                primary: 'bi-question-circle-fill',
+                success: 'bi-check-circle-fill',
+            };
+
+            window.appHtmlEscape = function (s) {
+                return String(s ?? '').replace(/[<>&"']/g, function (c) {
+                    return { '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;' }[c];
+                });
+            };
+
+            window.appConfirm = function (opts) {
+                opts = opts || {};
+                const tone = opts.tone && TONE_CLASS[opts.tone] ? opts.tone : 'danger';
+
+                titleEl.textContent = opts.title || 'Are you sure?';
+                msgEl.innerHTML = opts.message || '';
+                if (opts.note) { noteEl.textContent = opts.note; noteEl.classList.remove('d-none'); }
+                else { noteEl.textContent = ''; noteEl.classList.add('d-none'); }
+
+                iconBox.className = 'app-confirm-icon app-confirm-icon--' + tone + ' mb-3';
+                iconEl.className = 'bi ' + (opts.icon || DEFAULT_ICON[tone]);
+
+                actionEl.className = 'btn app-confirm-action ' + TONE_CLASS[tone];
+                actionEl.textContent = opts.confirmLabel || (tone === 'danger' ? 'Delete' : 'Confirm');
+
+                return new Promise(function (resolve) {
+                    let settled = false;
+                    const confirmHandler = function () {
+                        settled = true;
+                        actionEl.removeEventListener('click', confirmHandler);
+                        bsModal.hide();
+                        resolve(true);
+                    };
+                    const hiddenHandler = function () {
+                        modalEl.removeEventListener('hidden.bs.modal', hiddenHandler);
+                        actionEl.removeEventListener('click', confirmHandler);
+                        if (!settled) resolve(false);
+                    };
+                    actionEl.addEventListener('click', confirmHandler);
+                    modalEl.addEventListener('hidden.bs.modal', hiddenHandler);
+                    modalEl.addEventListener('shown.bs.modal', function focusCancel () {
+                        modalEl.removeEventListener('shown.bs.modal', focusCancel);
+                        // Focus Cancel by default — Enter on the modal won't trigger destructive action.
+                        cancelEl.focus();
+                    });
+                    bsModal.show();
+                });
+            };
+
+            // Delegated handler: any <form data-app-confirm> intercepts submit and asks first.
+            document.addEventListener('submit', function (e) {
+                const form = e.target;
+                if (!form.matches('[data-app-confirm]')) return;
+                if (form.dataset.confirmed === '1') return; // already confirmed, let it through
+                e.preventDefault();
+                const label  = form.dataset.confirmLabel  || 'this item';
+                const action = form.dataset.confirmAction || 'Delete';
+                const tone   = form.dataset.confirmTone   || 'danger';
+                appConfirm({
+                    tone: tone,
+                    title: form.dataset.confirmTitle   || (action + ' this item?'),
+                    message: form.dataset.confirmMessage || ('You are about to ' + action.toLowerCase() + ' <strong>' + appHtmlEscape(label) + '</strong>.'),
+                    note: form.dataset.confirmNote     || (tone === 'danger' ? 'This action cannot be undone.' : ''),
+                    confirmLabel: action,
+                }).then(function (ok) {
+                    if (!ok) return;
+                    form.dataset.confirmed = '1';
+                    form.submit();
+                });
+            });
+        })();
+    </script>
+    @endauth
+
     @stack('scripts')
 </body>
 </html>

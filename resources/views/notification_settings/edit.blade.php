@@ -107,12 +107,46 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Reminder days before expiry <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="number" name="days_before" min="1" max="365" value="{{ old('days_before', $setting->days_before ?? 30) }}" class="form-control @error('days_before') is-invalid @enderror" required>
-                                        <span class="input-group-text">days</span>
+                                    @php
+                                        $presets = [30, 20, 10];
+                                        // Pre-check items already in the saved set; fall back to nearest
+                                        // preset if existing data is e.g. legacy 15.
+                                        $rawOld   = old('days_before_set', $setting->days_before_set ?? []);
+                                        $rawOld   = is_array($rawOld) ? $rawOld : [];
+                                        $currentSet = array_values(array_intersect($presets, array_map('intval', $rawOld)));
+                                        if (empty($currentSet) && ! empty($rawOld)) {
+                                            // Legacy single value (e.g. 15) — pick the nearest preset, tiebreak larger.
+                                            $legacy = (int) $rawOld[0];
+                                            $currentSet = [collect($presets)
+                                                ->sortBy(fn ($v) => sprintf('%05d-%05d', abs($v - $legacy), 9999 - $v))
+                                                ->first()];
+                                        } elseif (empty($currentSet)) {
+                                            $currentSet = [30];
+                                        }
+                                    @endphp
+                                    <div class="day-mark-list">
+                                        @foreach($presets as $d)
+                                            @php $on = in_array($d, $currentSet, true); @endphp
+                                            <label class="day-mark-card {{ $on ? 'is-on' : '' }}" for="days_{{ $key }}_{{ $d }}">
+                                                <span class="day-mark-meta">
+                                                    <span class="day-mark-value">{{ $d }}</span>
+                                                    <span class="day-mark-unit">days before</span>
+                                                </span>
+                                                <span class="form-check form-switch m-0">
+                                                    <input type="checkbox"
+                                                           name="days_before_set[]"
+                                                           id="days_{{ $key }}_{{ $d }}"
+                                                           value="{{ $d }}"
+                                                           class="form-check-input day-mark-toggle"
+                                                           role="switch"
+                                                           @checked($on)>
+                                                </span>
+                                            </label>
+                                        @endforeach
                                     </div>
-                                    <small class="text-muted">Records within this window trigger reminders.</small>
-                                    @error('days_before')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                    <small class="text-muted d-block mt-2">Toggle one or more. The widest enabled window drives the badge &amp; list.</small>
+                                    @error('days_before_set')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                    @error('days_before_set.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-8">
                                     <label class="form-label">Recipients</label>
@@ -191,6 +225,61 @@
         font-size: 2rem;
     }
 
+    /* Day-mark on/off cards: one per preset (30/20/10 days). */
+    .day-mark-list {
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+    }
+    .day-mark-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .55rem .85rem;
+        border-radius: .6rem;
+        border: 1px solid rgba(31, 38, 135, 0.12);
+        background: #fff;
+        cursor: pointer;
+        margin: 0;
+        transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .day-mark-card:hover {
+        border-color: rgba(13, 110, 253, 0.3);
+        background: rgba(13, 110, 253, 0.025);
+    }
+    .day-mark-card.is-on {
+        border-color: rgba(13, 110, 253, 0.45);
+        background: rgba(13, 110, 253, 0.06);
+        box-shadow: 0 1px 2px rgba(13, 110, 253, 0.08);
+    }
+    .day-mark-meta { display: inline-flex; align-items: baseline; gap: .4rem; line-height: 1.1; }
+    .day-mark-value { font-size: 1.05rem; font-weight: 700; color: #0f172a; }
+    .day-mark-unit  { font-size: .72rem; color: #64748b; font-weight: 500; }
+    .day-mark-card.is-on .day-mark-value { color: #0d6efd; }
+    .day-mark-card .form-check-input {
+        width: 2.2rem; height: 1.25rem;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    [data-bs-theme="dark"] .day-mark-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    [data-bs-theme="dark"] .day-mark-card:hover {
+        background: rgba(147, 197, 253, 0.05);
+        border-color: rgba(147, 197, 253, 0.3);
+    }
+    [data-bs-theme="dark"] .day-mark-card.is-on {
+        background: rgba(147, 197, 253, 0.1);
+        border-color: rgba(147, 197, 253, 0.45);
+        box-shadow: 0 1px 2px rgba(147, 197, 253, 0.1);
+    }
+    [data-bs-theme="dark"] .day-mark-value { color: #f1f5f9; }
+    [data-bs-theme="dark"] .day-mark-card.is-on .day-mark-value { color: #93c5fd; }
+    [data-bs-theme="dark"] .day-mark-unit { color: #94a3b8; }
+
     [data-bs-theme="dark"] .notification-tabs { border-bottom-color: rgba(255, 255, 255, 0.06); }
     [data-bs-theme="dark"] .notification-tabs .nav-link { color: #cfd8dc; }
     [data-bs-theme="dark"] .notification-tabs .nav-link:hover { background: rgba(147, 197, 253, 0.06); color: #93c5fd; }
@@ -205,9 +294,17 @@
 
 <script>
     (function () {
-        // Wire each enable-toggle to its own card visual sync
+        // Module-level enable card
         document.querySelectorAll('.notification-enable-toggle').forEach(input => {
             const card = input.closest('.mail-enable-card');
+            input.addEventListener('change', () => {
+                card?.classList.toggle('is-on', input.checked);
+            });
+        });
+
+        // Per-day-mark on/off switches
+        document.querySelectorAll('.day-mark-toggle').forEach(input => {
+            const card = input.closest('.day-mark-card');
             input.addEventListener('change', () => {
                 card?.classList.toggle('is-on', input.checked);
             });

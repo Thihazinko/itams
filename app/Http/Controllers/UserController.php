@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\UserCredentialsMail;
 use App\Models\User;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
@@ -67,6 +70,10 @@ class UserController extends Controller
 
         $data = $request->validate($rules);
 
+        // Capture the plain-text password before User::create hashes it via the model cast,
+        // so we can include it in the welcome email.
+        $plainPassword = $data['password'];
+
         if ($request->hasFile('avatar')) {
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
@@ -81,7 +88,13 @@ class UserController extends Controller
             subject: $user,
         );
 
-        return redirect()->route('users.index')->with('success', 'User created.');
+        $emailStatus = $this->sendCredentialsEmail($user, $plainPassword);
+
+        $flash = $emailStatus === true
+            ? "User created. Login details sent to {$user->email}."
+            : 'User created, but the welcome email could not be sent: ' . $emailStatus;
+
+        return redirect()->route('users.index')->with($emailStatus === true ? 'success' : 'warning', $flash);
     }
 
     public function edit(User $user)
@@ -159,6 +172,37 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'User deleted.');
+    }
+
+    /**
+     * Attempt to email login credentials to the newly-created user.
+     * Returns true on success, or the error message string on failure.
+     */
+    private function sendCredentialsEmail(User $user, string $plainPassword): bool|string
+    {
+        try {
+            Mail::to($user->email)->send(new UserCredentialsMail(
+                user: $user,
+                plainPassword: $plainPassword,
+                loginUrl: route('login'),
+            ));
+
+            ActivityLogger::log(
+                action: 'mail_sent',
+                description: "Sent welcome email with login details to {$user->email}",
+                subject: $user,
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send user credentials email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $e->getMessage();
+        }
     }
 
     private function applyPermissions(Request $request, array &$data): void

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Device;
 use App\Models\LicenseContract;
-use App\Models\Notification;
 use App\Models\PcAsset;
 use App\Models\Subscription;
 use Carbon\Carbon;
@@ -72,8 +71,6 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        $unreadNotifications = Notification::whereNull('read_at')->count();
-
         $recentActivity = ActivityLog::orderByDesc('created_at')->limit(8)->get();
 
         return view('dashboard', compact(
@@ -82,7 +79,6 @@ class DashboardController extends Controller
             'deviceStatusCounts',
             'expiringSoon',
             'expiringLicenses',
-            'unreadNotifications',
             'recentActivity',
         ));
     }

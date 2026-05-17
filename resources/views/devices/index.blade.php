@@ -319,12 +319,21 @@
                                 <td class="text-muted small">{{ $device->warranty ?: '—' }}</td>
                                 <td class="text-muted small">{{ $device->delivery_date?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="text-end text-nowrap pe-3">
-                                    <a href="{{ route('devices.show', $device) }}" class="btn btn-sm btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
-                                    <a href="{{ route('devices.edit', $device) }}" class="btn btn-sm btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+                                    <a href="{{ route('devices.show', $device) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ route('devices.edit', $device) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     @if($isAdmin)
-                                    <button type="button" class="btn btn-sm btn-icon-soft text-danger device-delete-single"
+                                    @php
+                                        $dvParts = [];
+                                        if ($device->vendor)         $dvParts[] = $device->vendor;
+                                        if ($device->qty)            $dvParts[] = '×' . $device->qty;
+                                        if ($device->serial_number)  $dvParts[] = 'S/N ' . $device->serial_number;
+                                        $dvDetail = implode(' · ', $dvParts);
+                                    @endphp
+                                    <button type="button" class="btn-icon-soft text-danger device-delete-single"
                                             title="Delete" aria-label="Delete"
-                                            data-id="{{ $device->id }}" data-label="{{ $device->item_name }}"><i class="bi bi-trash"></i></button>
+                                            data-id="{{ $device->id }}"
+                                            data-label="{{ $device->item_name }}"
+                                            data-detail="{{ $dvDetail }}"><i class="bi bi-trash"></i></button>
                                     @endif
                                 </td>
                             </tr>
@@ -507,15 +516,24 @@
     document.addEventListener('submit', (e) => {
         const form = e.target.closest('#deviceBulkForm');
         if (!form) return;
+        if (form.dataset.bulkConfirmed === '1') return;
         const selected = document.querySelectorAll('.device-row-check:checked').length;
         if (selected === 0) {
             e.preventDefault();
             alert('Select at least one device to delete.');
             return;
         }
-        if (!confirm(`Delete ${selected} selected device(s)? This cannot be undone.`)) {
-            e.preventDefault();
-        }
+        e.preventDefault();
+        appConfirm({
+            title: `Delete ${selected} device(s)?`,
+            message: `You are about to permanently delete <strong>${selected}</strong> selected device record(s).`,
+            note: 'This action cannot be undone.',
+            confirmLabel: 'Delete all',
+        }).then((ok) => {
+            if (!ok) return;
+            form.dataset.bulkConfirmed = '1';
+            form.submit();
+        });
     });
 
     document.addEventListener('click', (e) => {
@@ -523,11 +541,21 @@
         if (!btn) return;
         const id = btn.dataset.id;
         const label = btn.dataset.label;
-        if (!confirm(`Delete device "${label}"?`)) return;
-        const form = document.getElementById('deviceSingleDeleteForm');
-        if (!form) return;
-        form.action = `{{ url('devices') }}/${id}`;
-        form.submit();
+        const detail = btn.dataset.detail
+            ? `<br><small class="text-muted">${appHtmlEscape(btn.dataset.detail)}</small>`
+            : '';
+        appConfirm({
+            title: 'Delete this device?',
+            message: `You are about to permanently delete <strong>${appHtmlEscape(label)}</strong>.${detail}`,
+            note: 'This action cannot be undone.',
+            confirmLabel: 'Delete',
+        }).then((ok) => {
+            if (!ok) return;
+            const form = document.getElementById('deviceSingleDeleteForm');
+            if (!form) return;
+            form.action = `{{ url('devices') }}/${id}`;
+            form.submit();
+        });
     });
 
     window.addEventListener('popstate', () => {

@@ -2,35 +2,52 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\SubscriptionExpiringMail;
-use App\Models\MailSetting;
-use App\Models\Notification;
+use App\Mail\ExpiryReminderDigest;
+use App\Models\LicenseContract;
+use App\Models\NotificationSetting;
 use App\Models\Subscription;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Mail;
 
 class CheckExpirations extends Command
 {
     protected $signature = 'app:check-expirations';
 
-    protected $description = 'Check subscriptions expiring within the configured reminder window, update status, create notifications, and email recipients.';
+    protected $description = 'Mark overdue subscriptions Expired and email staggered renewal-reminder digests for each (module × selected day-mark) bucket. Run once per day from the scheduler — manual re-runs the same day will re-send the same digests.';
+
+    /** Modules eligible for staggered reminders. */
+    private const MODULES = [
+        'subscriptions' => [
+            'label' => 'Subscription',
+            'flip_pending_on_send' => true,
+        ],
+        'licenses_contracts' => [
+            'label' => 'License & Contract',
+            'flip_pending_on_send' => false,
+        ],
+    ];
 
     public function handle(): int
     {
-        $settings = MailSetting::current();
-        $daysBefore = max(1, (int) ($settings->reminder_days_before ?? 30));
-
         $today = Carbon::today();
-        $threshold = $today->copy()->addDays($daysBefore);
 
-        $expiring = Subscription::where('status', 'Active')
-            ->where('renewal_status', '!=', 'Renewed')
-            ->whereDate('expire_date', '<=', $threshold)
-            ->whereDate('expire_date', '>=', $today)
-            ->get();
+        $this->markOverdueSubscriptions($today);
 
+        $totalBatches = 0;
+        foreach (array_keys(self::MODULES) as $moduleKey) {
+            $totalBatches += $this->sendStaggeredFor($moduleKey, $today);
+        }
+
+        $this->info("Done. Sent {$totalBatches} digest batch(es) in total.");
+
+        return self::SUCCESS;
+    }
+
+    private function markOverdueSubscriptions(Carbon $today): void
+    {
         $expired = Subscription::where('status', 'Active')
             ->where('renewal_status', '!=', 'Renewed')
             ->whereDate('expire_date', '<', $today)
@@ -40,51 +57,87 @@ class CheckExpirations extends Command
             $subscription->renewal_status = 'Expired';
             $subscription->saveQuietly();
         }
-        $this->info("Marked {$expired->count()} subscriptions as Expired.");
 
-        $recipients = $settings->recipientsArray();
+        $this->info("Marked {$expired->count()} subscription(s) as Expired.");
+    }
+
+    private function sendStaggeredFor(string $moduleKey, Carbon $today): int
+    {
+        $setting = NotificationSetting::query()->where('module', $moduleKey)->first();
+        if (! $setting || ! $setting->enabled) {
+            $this->info("[{$moduleKey}] notifications disabled — skipped.");
+            return 0;
+        }
+
+        $days = $setting->selectedDays(); // descending unique ints
+        if (empty($days)) {
+            $this->info("[{$moduleKey}] no day-marks selected — skipped.");
+            return 0;
+        }
+
+        $recipients = $setting->recipientsArray();
         if (empty($recipients)) {
             $recipients = User::where('role', 'admin')->pluck('email')->filter()->values()->toArray();
         }
-        $sentCount = 0;
+        if (empty($recipients)) {
+            $this->warn("[{$moduleKey}] no recipients (no admin users with emails) — skipped.");
+            return 0;
+        }
 
-        foreach ($expiring as $subscription) {
-            if ($subscription->renewal_status !== 'Pending') {
-                $subscription->renewal_status = 'Pending';
-                $subscription->saveQuietly();
-            }
+        $cfg = self::MODULES[$moduleKey];
+        $batches = 0;
 
-            $daysRemaining = (int) Carbon::today()->diffInDays($subscription->expire_date, false);
+        foreach ($days as $d) {
+            $target = $today->copy()->addDays($d);
+            $rows = $this->baseQuery($moduleKey)
+                ->whereDate('expire_date', $target)
+                ->orderBy('expire_date')
+                ->get();
 
-            $alreadyNotifiedToday = Notification::where('subscription_id', $subscription->id)
-                ->whereDate('created_at', $today)
-                ->exists();
-
-            if ($alreadyNotifiedToday) {
+            if ($rows->isEmpty()) {
                 continue;
             }
 
-            Notification::create([
-                'subscription_id' => $subscription->id,
-                'title' => "Renewal Due: {$subscription->subscription_name}",
-                'message' => "{$subscription->subscription_name} ({$subscription->service_type}) expires on {$subscription->expire_date->format('Y-m-d')} ({$daysRemaining} day(s) left).",
-                'expire_date' => $subscription->expire_date,
-                'days_remaining' => $daysRemaining,
-            ]);
-
-            if (! empty($recipients)) {
-                try {
-                    Mail::to($recipients)->send(new SubscriptionExpiringMail($subscription, $daysRemaining));
-                    $sentCount++;
-                } catch (\Throwable $e) {
-                    $this->error("Failed to send mail for subscription #{$subscription->id}: {$e->getMessage()}");
+            // For subscriptions, flip renewal_status to Pending on send so the
+            // UI shows them as "Pending renewal" until acted on.
+            if ($cfg['flip_pending_on_send']) {
+                foreach ($rows as $s) {
+                    if ($s->renewal_status !== 'Pending') {
+                        $s->renewal_status = 'Pending';
+                        $s->saveQuietly();
+                    }
                 }
+            }
+
+            try {
+                Mail::to($recipients)->send(new ExpiryReminderDigest(
+                    moduleKey:   $moduleKey,
+                    moduleLabel: $cfg['label'],
+                    daysAhead:   $d,
+                    records:     $rows,
+                ));
+                $batches++;
+                $this->info("[{$moduleKey}] sent {$d}-day digest with {$rows->count()} record(s) to " . count($recipients) . ' recipient(s).');
+            } catch (\Throwable $e) {
+                $this->error("[{$moduleKey}] failed to send {$d}-day digest: {$e->getMessage()}");
             }
         }
 
-        $this->info("Processed {$expiring->count()} expiring subscriptions; sent {$sentCount} email batches to " . count($recipients) . " recipient(s).");
-        $this->info("Reminder window: {$daysBefore} day(s) before expiry.");
+        if ($batches === 0) {
+            $this->info("[{$moduleKey}] no records matched any selected day-mark today.");
+        }
 
-        return self::SUCCESS;
+        return $batches;
+    }
+
+    private function baseQuery(string $moduleKey): Builder
+    {
+        return match ($moduleKey) {
+            'subscriptions' => Subscription::query()
+                ->where('status', 'Active')
+                ->where('renewal_status', '!=', 'Renewed'),
+            'licenses_contracts' => LicenseContract::query()
+                ->whereNotIn('status', ['Terminated']),
+        };
     }
 }

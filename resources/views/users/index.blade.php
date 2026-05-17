@@ -167,7 +167,11 @@
                         <td class="text-end text-nowrap pe-3">
                             <a href="{{ route('users.edit', $u) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                             @if(!$isMe)
-                            <form action="{{ route('users.destroy', $u) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete user \'{{ addslashes($u->name) }}\'?');">
+                            <form action="{{ route('users.destroy', $u) }}" method="POST" class="d-inline"
+                                  data-app-confirm
+                                  data-confirm-title="Delete this user?"
+                                  data-confirm-label="{{ $u->name }} ({{ $u->email }})"
+                                  data-confirm-action="Delete">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-soft text-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
                             </form>

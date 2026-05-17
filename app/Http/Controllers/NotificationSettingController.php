@@ -25,10 +25,16 @@ class NotificationSettingController extends Controller
         }
 
         $data = $request->validate([
-            'enabled'     => 'sometimes|boolean',
-            'days_before' => 'required|integer|min:1|max:365',
-            'recipients'  => 'nullable|string|max:2000',
+            'enabled'           => 'sometimes|boolean',
+            'days_before_set'   => 'required|array|min:1',
+            'days_before_set.*' => 'integer|in:10,20,30',
+            'recipients'        => 'nullable|string|max:2000',
         ]);
+
+        // Normalize: unique + descending.
+        $set = array_values(array_unique(array_map('intval', $data['days_before_set'])));
+        rsort($set);
+        $data['days_before_set'] = $set;
 
         if (! empty($data['recipients'])) {
             foreach (preg_split('/[\s,;]+/', $data['recipients']) as $email) {

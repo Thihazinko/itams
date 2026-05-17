@@ -359,9 +359,17 @@
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('licenses-contracts.edit', $item) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     @if($isAdmin)
+                                    @php
+                                        $lcParts = [];
+                                        if ($item->vendor_name) $lcParts[] = $item->vendor_name;
+                                        if ($item->expire_date) $lcParts[] = 'expires ' . $item->expire_date->format('Y-m-d');
+                                        $lcDetail = implode(' · ', $lcParts);
+                                    @endphp
                                     <button type="button" class="btn-icon-soft text-danger lc-delete-single"
                                             title="Delete" aria-label="Delete"
-                                            data-id="{{ $item->id }}" data-label="{{ $item->software_name }}"><i class="bi bi-trash"></i></button>
+                                            data-id="{{ $item->id }}"
+                                            data-label="{{ $item->software_name }}"
+                                            data-detail="{{ $lcDetail }}"><i class="bi bi-trash"></i></button>
                                     @endif
                                 </td>
                             </tr>
@@ -492,26 +500,45 @@
     document.addEventListener('submit', (e) => {
         const form = e.target.closest('#lcBulkForm');
         if (!form) return;
+        if (form.dataset.bulkConfirmed === '1') return;
         const selected = document.querySelectorAll('.lc-row-check:checked').length;
         if (selected === 0) {
             e.preventDefault();
             alert('Select at least one license/contract to delete.');
             return;
         }
-        if (!confirm(`Delete ${selected} selected license/contract record(s)? This cannot be undone.`)) {
-            e.preventDefault();
-        }
+        e.preventDefault();
+        appConfirm({
+            title: `Delete ${selected} record(s)?`,
+            message: `You are about to permanently delete <strong>${selected}</strong> selected license/contract record(s).`,
+            note: 'This action cannot be undone.',
+            confirmLabel: 'Delete all',
+        }).then((ok) => {
+            if (!ok) return;
+            form.dataset.bulkConfirmed = '1';
+            form.submit();
+        });
     });
 
     // Single delete
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.lc-delete-single');
         if (!btn) return;
-        if (!confirm(`Delete license/contract "${btn.dataset.label}"?`)) return;
-        const form = document.getElementById('lcSingleDeleteForm');
-        if (!form) return;
-        form.action = `{{ url('licenses-contracts') }}/${btn.dataset.id}`;
-        form.submit();
+        const detail = btn.dataset.detail
+            ? `<br><small class="text-muted">${appHtmlEscape(btn.dataset.detail)}</small>`
+            : '';
+        appConfirm({
+            title: 'Delete this license/contract?',
+            message: `You are about to permanently delete <strong>${appHtmlEscape(btn.dataset.label)}</strong>.${detail}`,
+            note: 'This action cannot be undone.',
+            confirmLabel: 'Delete',
+        }).then((ok) => {
+            if (!ok) return;
+            const form = document.getElementById('lcSingleDeleteForm');
+            if (!form) return;
+            form.action = `{{ url('licenses-contracts') }}/${btn.dataset.id}`;
+            form.submit();
+        });
     });
 
     window.addEventListener('popstate', () => {
