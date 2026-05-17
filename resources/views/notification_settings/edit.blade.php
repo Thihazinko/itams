@@ -26,7 +26,7 @@
         <div class="page-subtitle">Configure per-module reminder emails &mdash; window, recipients, and on/off.</div>
     </div>
     <a href="{{ route('mail-settings.edit') }}" class="quick-action">
-        <i class="bi bi-envelope-gear"></i> Mail Settings
+        <i class="bi bi-envelope-fill"></i> Mail Settings
     </a>
 </div>
 

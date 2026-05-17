@@ -27,7 +27,7 @@
             <div class="card mb-3 mail-enable-card {{ $settings->enabled ? 'is-on' : '' }}">
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="mail-enable-icon">
-                        <i class="bi bi-envelope-gear"></i>
+                        <i class="bi bi-database-fill-gear"></i>
                     </div>
                     <div class="flex-grow-1">
                         <div class="fw-semibold">Database SMTP settings</div>

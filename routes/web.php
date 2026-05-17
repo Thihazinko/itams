@@ -8,6 +8,7 @@ use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\LicenseContractController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PcAssetController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -87,6 +88,10 @@ Route::middleware('auth')->group(function () {
         ->where(['module' => 'subscriptions|licenses_contracts', 'id' => '[0-9]+'])
         ->name('notifications.read');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    // Self-service profile (any authenticated user — admin or not)
+    Route::get('profile',  [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile',  [ProfileController::class, 'update'])->name('profile.update');
 
     Route::middleware('admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);

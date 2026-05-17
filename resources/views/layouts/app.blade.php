@@ -208,12 +208,16 @@
             color: #fff;
             font-size: 0.62rem;
             font-weight: 700;
-            line-height: 18px;
-            text-align: center;
+            line-height: 1;
             border-radius: 999px;
             border: 2px solid rgba(255, 255, 255, 0.95);
             background: #0d6efd;
             box-shadow: 0 1px 3px rgba(13, 110, 253, 0.3);
+            /* Bulletproof centering regardless of border, padding, or digit count */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
         }
         .topbar-btn .notify-dot--upcoming {
             background: #0d6efd;
@@ -1132,9 +1136,7 @@
                    aria-label="{{ $expiryTooltip }}">
                     <i class="bi {{ $expiryOverdue > 0 ? 'bi-bell-fill' : 'bi-bell' }}"></i>
                     @if($expiryTotal > 0)
-                        <span class="notify-dot notify-dot--{{ $expiryTone }}">
-                            {{ $expiryTotal > 99 ? '99+' : $expiryTotal }}
-                        </span>
+                        <span class="notify-dot notify-dot--{{ $expiryTone }}">{{ $expiryTotal > 99 ? '99+' : $expiryTotal }}</span>
                     @endif
                 </a>
                 <div class="dropdown">
@@ -1178,6 +1180,12 @@
                                 <i class="bi bi-clipboard" data-default-icon></i>
                                 <span>Copy email</span>
                             </button>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
+                                <i class="bi bi-person-gear"></i> My Account
+                            </a>
                         </li>
 
                         @if($authUser->isAdmin())
