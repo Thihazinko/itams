@@ -371,13 +371,54 @@
                                         if ($sub->vendor_name)  $subParts[] = $sub->vendor_name;
                                         if ($sub->expire_date)  $subParts[] = 'expires ' . $sub->expire_date->format('Y-m-d');
                                         $subDetail = implode(' · ', $subParts);
+                                        $activeRenewal = $activeRenewals[$sub->id] ?? null;
                                     @endphp
-                                    @if($sub->renewal_status !== 'Renewed' && $isAdmin)
-                                    <button type="button" class="btn-icon-soft sub-mark-renewed text-success"
-                                            title="Mark renewed" aria-label="Mark renewed"
-                                            data-id="{{ $sub->id }}"
-                                            data-label="{{ $sub->subscription_name }}"
-                                            data-detail="{{ $subDetail }}"><i class="bi bi-check2-circle"></i></button>
+                                    @if($activeRenewal && $activeRenewal->status === 'draft')
+                                        <a href="{{ route('purchase-orders.index') }}"
+                                           class="btn-icon-soft text-secondary"
+                                           title="Draft quotation — open Purchase Orders to send to 1st approver" aria-label="Open draft P.O.">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </a>
+                                    @elseif($activeRenewal && $activeRenewal->status === 'pending_approval')
+                                        <a href="{{ route('subscriptions.renewals.show', $activeRenewal) }}"
+                                           class="btn-icon-soft text-warning"
+                                           title="Awaiting 1st approval — view quotation" aria-label="View quotation">
+                                            <i class="bi bi-hourglass-split"></i>
+                                        </a>
+                                    @elseif($activeRenewal && $activeRenewal->status === 'first_approved')
+                                        <a href="{{ route('purchase-orders.index') }}"
+                                           class="btn-icon-soft text-info"
+                                           title="1st approved — open Purchase Orders to send 2nd approver" aria-label="Open P.O. to send 2nd approver">
+                                            <i class="bi bi-envelope-plus"></i>
+                                        </a>
+                                    @elseif($activeRenewal && $activeRenewal->status === 'pending_second_approval')
+                                        <a href="{{ route('subscriptions.renewals.show', $activeRenewal) }}"
+                                           class="btn-icon-soft text-warning"
+                                           title="Awaiting 2nd approval — view quotation" aria-label="View quotation">
+                                            <i class="bi bi-hourglass-split"></i>
+                                        </a>
+                                    @elseif($activeRenewal && $activeRenewal->status === 'approved' && $isAdmin)
+                                        <button type="button" class="btn-icon-soft text-primary sub-final-confirm"
+                                                title="Both approvers signed — final confirm renewal" aria-label="Final confirm"
+                                                data-renewal-id="{{ $activeRenewal->id }}"
+                                                data-po="{{ $activeRenewal->po_number }}"
+                                                data-label="{{ $sub->subscription_name }}"
+                                                data-detail="Approved by {{ $activeRenewal->approver_name }}{{ $activeRenewal->second_approver_name ? ' & ' . $activeRenewal->second_approver_name : '' }}">
+                                            <i class="bi bi-patch-check-fill"></i>
+                                        </button>
+                                    @elseif($sub->renewal_status !== 'Renewed' && $isAdmin)
+                                        <button type="button" class="btn-icon-soft sub-renew-po text-success"
+                                                title="Renew with Purchase Order" aria-label="Renew with PO"
+                                                data-id="{{ $sub->id }}"
+                                                data-name="{{ $sub->subscription_name }}"
+                                                data-service="{{ $sub->service_type }}"
+                                                data-project="{{ $sub->project_name }}"
+                                                data-vendor="{{ $sub->vendor_name }}"
+                                                data-cost="{{ $sub->renewal_cost }}"
+                                                data-currency="{{ $sub->currency ?: 'MMK' }}"
+                                                data-expire="{{ optional($sub->expire_date)->format('Y-m-d') }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </button>
                                     @endif
                                     <a href="{{ route('subscriptions.edit', $sub) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     @if($isAdmin)
@@ -414,14 +455,134 @@
         </div>
     </form>
 
-    <form id="subRenewForm" method="POST" class="d-none">
+    @if($isAdmin)
+    <form id="subFinalConfirmForm" method="POST" class="d-none">
         @csrf
     </form>
 
-    @if($isAdmin)
     <form id="subSingleDeleteForm" method="POST" class="d-none">
         @csrf @method('DELETE')
     </form>
+
+    {{-- Renew with Purchase Order modal --}}
+    <div class="modal fade" id="subRenewPoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <form id="subRenewPoForm" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Renew with Purchase Order
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info small mb-3" id="subRenewPoContext">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <span id="subRenewPoSummary">Subscription details will appear here.</span>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase small mb-2">P.O. details</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Subject <span class="text-danger">*</span></label>
+                                <input type="text" name="subject" class="form-control" required maxlength="255"
+                                       placeholder="e.g. Annual renewal of SSL certificate">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Reference</label>
+                                <input type="text" name="reference" class="form-control" maxlength="255"
+                                       placeholder="Internal ref. no.">
+                            </div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase small mb-2">Vendor</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Vendor company</label>
+                                <input type="text" name="vendor_company" class="form-control" maxlength="255">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Contact name</label>
+                                <input type="text" name="vendor_name" class="form-control" maxlength="255">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Phone / Email</label>
+                                <input type="text" name="vendor_phone_email" class="form-control" maxlength="255">
+                            </div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase small mb-2">Approver (quotation recipient)</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Pick a registered user (optional)</label>
+                                <select name="approver_user_id" class="form-select" id="subRenewApproverSelect">
+                                    <option value="">— External recipient (use email below) —</option>
+                                    @foreach($approverChoices as $u)
+                                        <option value="{{ $u->id }}"
+                                                data-name="{{ $u->name }}"
+                                                data-email="{{ $u->email }}">
+                                            {{ $u->name }} &lt;{{ $u->email }}&gt;
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">
+                                    Registered users will be required to log in; external recipients receive a signed link.
+                                    A draft quotation is created here — no email is sent until you click the
+                                    <i class="bi bi-envelope"></i> icon on the Purchase Orders list.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Approver name <span class="text-danger">*</span></label>
+                                <input type="text" name="approver_name" class="form-control" required maxlength="255">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Approver email <span class="text-danger">*</span></label>
+                                <input type="email" name="approver_email" class="form-control" required maxlength="255">
+                            </div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase small mb-2">Pricing</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                                <input type="number" name="quantity" class="form-control" min="1" value="1" required id="subRenewQty">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Unit price <span class="text-danger">*</span></label>
+                                <input type="number" name="unit_price" class="form-control" min="0" step="0.01" required id="subRenewUnit">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                <select name="currency" class="form-select" required>
+                                    @foreach(['MMK','JPY','USD'] as $c)
+                                        <option value="{{ $c }}">{{ $c }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Total</label>
+                                <input type="text" class="form-control" id="subRenewTotal" readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-1">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="2" maxlength="2000"
+                                      placeholder="Optional note shown on the PO and in the email."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-file-earmark-plus"></i> Create draft P.O.
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     @endif
 
     <div class="mt-3">{{ $subscriptions->links() }}</div>
@@ -561,25 +722,79 @@
         });
     });
 
-    // Mark renewed
+    // Renew with PO — open modal pre-filled
     document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.sub-mark-renewed');
+        const btn = e.target.closest('.sub-renew-po');
+        if (!btn) return;
+        const form = document.getElementById('subRenewPoForm');
+        const modalEl = document.getElementById('subRenewPoModal');
+        if (!form || !modalEl || !window.bootstrap) return;
+
+        form.action = `{{ url('subscriptions') }}/${btn.dataset.id}/renewals`;
+        form.reset();
+
+        // Pre-fill from the row
+        const summary = `Renewing <strong>${appHtmlEscape(btn.dataset.name || '')}</strong>`
+            + ` (${appHtmlEscape(btn.dataset.service || '—')} · ${appHtmlEscape(btn.dataset.project || '—')})`
+            + ` &middot; expires <strong>${appHtmlEscape(btn.dataset.expire || '—')}</strong>`;
+        const summaryEl = document.getElementById('subRenewPoSummary');
+        if (summaryEl) summaryEl.innerHTML = summary;
+
+        form.querySelector('[name="subject"]').value = `Renewal of ${btn.dataset.name || ''}`.trim();
+        form.querySelector('[name="vendor_company"]').value = btn.dataset.vendor || '';
+        if (btn.dataset.cost) form.querySelector('[name="unit_price"]').value = btn.dataset.cost;
+        if (btn.dataset.currency) {
+            const sel = form.querySelector('[name="currency"]');
+            if (sel) sel.value = btn.dataset.currency;
+        }
+        recalcRenewTotal();
+
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    });
+
+    // Approver dropdown auto-fills name + email
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.id === 'subRenewApproverSelect') {
+            const opt = e.target.selectedOptions[0];
+            const form = e.target.closest('form');
+            if (!form || !opt) return;
+            form.querySelector('[name="approver_name"]').value = opt.dataset.name || '';
+            form.querySelector('[name="approver_email"]').value = opt.dataset.email || '';
+        }
+    });
+
+    // Live total calculation
+    function recalcRenewTotal() {
+        const qty = parseFloat(document.getElementById('subRenewQty')?.value || '0');
+        const unit = parseFloat(document.getElementById('subRenewUnit')?.value || '0');
+        const out = document.getElementById('subRenewTotal');
+        if (out) out.value = (qty * unit).toFixed(2);
+    }
+    document.addEventListener('input', (e) => {
+        if (e.target && (e.target.id === 'subRenewQty' || e.target.id === 'subRenewUnit')) {
+            recalcRenewTotal();
+        }
+    });
+
+    // Final confirm renewal
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.sub-final-confirm');
         if (!btn) return;
         const detail = btn.dataset.detail
             ? `<br><small class="text-muted">${appHtmlEscape(btn.dataset.detail)}</small>`
             : '';
         appConfirm({
             tone: 'success',
-            icon: 'bi-arrow-clockwise',
-            title: 'Mark as renewed?',
-            message: `Mark <strong>${appHtmlEscape(btn.dataset.label)}</strong> as renewed.${detail}`,
-            note: 'The subscription will move out of pending reminders.',
-            confirmLabel: 'Mark renewed',
+            icon: 'bi-patch-check',
+            title: 'Final confirm renewal?',
+            message: `Finalise <strong>${appHtmlEscape(btn.dataset.label)}</strong> (${appHtmlEscape(btn.dataset.po)}).${detail}`,
+            note: 'The expiry date will be extended and a confirmation email sent to all admins.',
+            confirmLabel: 'Confirm renewal',
         }).then((ok) => {
             if (!ok) return;
-            const form = document.getElementById('subRenewForm');
+            const form = document.getElementById('subFinalConfirmForm');
             if (!form) return;
-            form.action = `{{ url('subscriptions') }}/${btn.dataset.id}/renew`;
+            form.action = `{{ url('subscriptions/renewals') }}/${btn.dataset.renewalId}/final-confirm`;
             form.submit();
         });
     });

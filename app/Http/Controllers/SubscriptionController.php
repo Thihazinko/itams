@@ -7,6 +7,8 @@ use App\Exports\SubscriptionsTemplate;
 use App\Imports\SubscriptionsImport;
 use App\Models\ActivityLog;
 use App\Models\Subscription;
+use App\Models\SubscriptionRenewal;
+use App\Models\User;
 use App\Support\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -55,6 +57,22 @@ class SubscriptionController extends Controller
 
         $subscriptions = $query->orderBy('expire_date')->paginate(20)->withQueryString();
 
+        $activeRenewals = SubscriptionRenewal::query()
+            ->whereIn('subscription_id', $subscriptions->pluck('id'))
+            ->whereIn('status', [
+                SubscriptionRenewal::STATUS_DRAFT,
+                SubscriptionRenewal::STATUS_PENDING,
+                SubscriptionRenewal::STATUS_FIRST_APPROVED,
+                SubscriptionRenewal::STATUS_PENDING_SECOND,
+                SubscriptionRenewal::STATUS_APPROVED,
+            ])
+            ->get()
+            ->keyBy('subscription_id');
+
+        $approverChoices = User::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
         $recentLogs = ActivityLog::where(function ($q) {
                 $q->where('subject_type', Subscription::class)
                   ->orWhere(function ($q2) {
@@ -90,7 +108,7 @@ class SubscriptionController extends Controller
                             ->count(),
         ];
 
-        return view('subscriptions.index', compact('subscriptions', 'recentLogs', 'expiringSoon', 'kpis'));
+        return view('subscriptions.index', compact('subscriptions', 'recentLogs', 'expiringSoon', 'kpis', 'activeRenewals', 'approverChoices'));
     }
 
     public function create()
@@ -155,19 +173,6 @@ class SubscriptionController extends Controller
         $subscription->delete();
 
         return redirect()->route('subscriptions.index')->with('success', 'Subscription deleted.');
-    }
-
-    public function markRenewed(Subscription $subscription)
-    {
-        $subscription->update(['renewal_status' => 'Renewed']);
-
-        ActivityLogger::log(
-            action: 'renewed',
-            description: "Marked subscription {$subscription->subscription_name} as renewed",
-            subject: $subscription,
-        );
-
-        return back()->with('success', 'Subscription marked as renewed.');
     }
 
     public function bulkDestroy(Request $request)

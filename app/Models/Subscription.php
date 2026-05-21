@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\MailSetting;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscription extends Model
 {
@@ -26,6 +27,24 @@ class Subscription extends Model
         'previous_cost' => 'decimal:2',
         'renewal_cost' => 'decimal:2',
     ];
+
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(SubscriptionRenewal::class)->orderByDesc('id');
+    }
+
+    public function activeRenewal(): ?SubscriptionRenewal
+    {
+        return $this->renewals()
+            ->whereIn('status', [
+                SubscriptionRenewal::STATUS_DRAFT,
+                SubscriptionRenewal::STATUS_PENDING,
+                SubscriptionRenewal::STATUS_FIRST_APPROVED,
+                SubscriptionRenewal::STATUS_PENDING_SECOND,
+                SubscriptionRenewal::STATUS_APPROVED,
+            ])
+            ->first();
+    }
 
     protected static function booted(): void
     {

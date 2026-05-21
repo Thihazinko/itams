@@ -138,7 +138,22 @@
       "PowerShell($items = Get-ChildItem -LiteralPath \"C:\\\\xampp\\\\mysql\\\\data\" -Force -File; $items | Where-Object { $_.Name -match 'master|relay|\\\\.info$' } | ForEach-Object { \"{0,10}  {1}\" -f $_.Length, $_.Name })",
       "PowerShell(New-Item *)",
       "PowerShell($p = Start-Process -FilePath \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysqld.exe\" -ArgumentList \"--defaults-file=C:\\\\xampp\\\\mysql\\\\bin\\\\my.ini\",\"--standalone\" -WorkingDirectory \"C:\\\\xampp\" -WindowStyle Hidden -PassThru -RedirectStandardError \"C:\\\\xampp\\\\mysql_stderr.log\" -RedirectStandardOutput \"C:\\\\xampp\\\\mysql_stdout.log\"; Start-Sleep -Seconds 4; if \\($p.HasExited\\) { \"FAILED - Exit code: $\\($p.ExitCode\\)\" } else { \"Running, PID: $\\($p.Id\\)\" })",
-      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT VERSION\\(\\); SHOW DATABASES;\")"
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT VERSION\\(\\); SHOW DATABASES;\")",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" migrate:status)",
+      "Bash(findstr /i \"renewal\")",
+      "Bash(C:\\\\xampp\\\\php\\\\php.exe *)",
+      "Bash(del *)",
+      "Bash(C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan *)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\SubscriptionRenewalController.php\")",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\SubscriptionRenewal.php\")",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Mail\\\\PurchaseOrderRequest.php\")",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\database\\\\migrations\\\\2026_05_20_000001_add_dual_approver_to_subscription_renewals.php\")",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --columns=method,uri,name --path=purchase)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --columns=method,uri,name --path=quotations)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --path=purchase)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --path=quotations)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:clear)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:cache)"
     ]
   }
 }

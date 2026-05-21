@@ -1080,6 +1080,9 @@
 
             @if($user->isAdmin())
             <div class="nav-section">Setting</div>
+            <a href="{{ route('purchase-orders.index') }}" class="{{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" title="Purchase Orders">
+                <i class="bi bi-file-earmark-ruled"></i> Purchase Orders
+            </a>
             <a href="{{ route('mail-settings.edit') }}" class="{{ request()->routeIs('mail-settings.*') ? 'active' : '' }}" title="Mail Settings">
                 <i class="bi bi-envelope-fill"></i> Mail Settings
             </a>
