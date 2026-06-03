@@ -289,8 +289,14 @@ docker compose build
 #=============================================================================
 step "Generating Laravel APP_KEY"
 
-APP_KEY="$(docker compose run --rm --no-deps app php artisan key:generate --show)"
-[[ -n "$APP_KEY" ]] || die "Failed to generate APP_KEY"
+# `-T` disables TTY allocation so docker compose doesn't write `[+] Creating…`
+# spinner UI to stdout. `grep -oE 'base64:…'` then extracts only the key token,
+# so even if extra lines slip through, APP_KEY stays single-line and sed works.
+APP_KEY="$(docker compose run --rm --no-deps -T app php artisan key:generate --show 2>/dev/null \
+    | tr -d '\r' \
+    | grep -oE 'base64:[A-Za-z0-9+/=]+' \
+    | tail -n1)"
+[[ -n "$APP_KEY" ]] || die "Failed to generate APP_KEY (extracted empty value)"
 sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" "${PROJECT_DIR}/.env"
 ok "APP_KEY set"
 
