@@ -97,6 +97,8 @@ When it finishes, the app is reachable at the URL you entered. If that URL is HT
 
 > **Non-interactive runs:** pre-set `DOMAIN`, `HTTP_PORT`, `DB_NAME`, `DB_USER` as env vars before invoking the script.
 
+> **If the build step fails with `npm error code EUSAGE`** (`npm ci` can only install with an existing `package-lock.json`), the repo is missing its lockfile. Run the one-liner from [§4.6](#46-generate-package-lockjson-one-time-if-missing) on the host, then re-run the installer — it's idempotent.
+
 ---
 
 ## 4. Option B — Manual install
@@ -170,7 +172,32 @@ Edit `.env` and set:
 
 > **Store the passwords in a password manager.** They can never be recovered if lost — only reset by wiping the `dbdata` volume (data loss).
 
-### 4.6 Build the images
+### 4.6 Generate `package-lock.json` (one-time, if missing)
+
+The Dockerfile uses `npm ci` for the Vite asset build. `npm ci` **requires** `package-lock.json` and aborts with `npm error code EUSAGE` if it's missing. Check first:
+
+```bash
+ls package-lock.json 2>/dev/null && echo OK || echo MISSING
+```
+
+If it prints `MISSING`, generate it once using a throwaway Node container:
+
+```bash
+docker run --rm -v "$(pwd):/app" -w /app node:20-alpine npm install
+ls -la package-lock.json
+```
+
+This pulls ~150 MB of packages into a local `node_modules/` (excluded from both git and the Docker build context — only the lockfile matters). Takes 30–90 seconds.
+
+> **Commit it back to the repo** so future deploys never hit this step:
+>
+> ```bash
+> git add package-lock.json
+> git commit -m "Add package-lock.json for reproducible Docker builds"
+> git push
+> ```
+
+### 4.7 Build the images
 
 ```bash
 docker compose build
@@ -178,7 +205,7 @@ docker compose build
 
 First build takes ~3–5 min (pulls base images, runs `npm ci` + `composer install`). Subsequent builds reuse layers.
 
-### 4.7 Generate `APP_KEY`
+### 4.8 Generate `APP_KEY`
 
 ```bash
 APP_KEY=$(docker compose run --rm --no-deps app php artisan key:generate --show)
@@ -187,7 +214,7 @@ sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
 
 `--no-deps` keeps the `db` container from starting just to print a key.
 
-### 4.8 First bring-up
+### 4.9 First bring-up
 
 ```bash
 docker compose up -d
@@ -394,6 +421,7 @@ docker compose up -d
 | nginx `permission denied` reading `default.conf` | Missing `:Z` SELinux label on the bind mount. Confirm `docker-compose.yml` still has `…default.conf:ro,Z`, then `docker compose up -d --force-recreate nginx`. |
 | `storage/` or `bootstrap/cache` permission denied at runtime | `docker compose exec app chown -R www-data:www-data storage bootstrap/cache`. |
 | Vite assets 404 (`/build/*.js` missing) | Asset stage didn't run or didn't get copied. `docker compose build --no-cache app && docker compose up -d app`. |
+| `npm error code EUSAGE` / `npm ci can only install with an existing package-lock.json` during `docker compose build` | `package-lock.json` is missing from the repo. Generate it once with `docker run --rm -v "$(pwd):/app" -w /app node:20-alpine npm install`, then commit it. See §4.6. |
 | `db` restart-loops with `Access denied for user 'root'` | Password mismatch with the existing `dbdata` volume. Either align `.env` with the original password, or wipe the volume (**DATA LOSS**): back up first, then `docker compose down -v`. |
 | Migrations don't run | Tail `docker compose logs app` — you should see `Waiting for MySQL...` then migration output. If not, the entrypoint failed earlier. |
 | Queue jobs not processing | `docker compose ps` — is `queue` running? `docker compose logs -f queue`. Confirm dispatching code uses `QUEUE_CONNECTION=database` (matches the worker). |
