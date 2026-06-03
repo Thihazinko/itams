@@ -6,6 +6,18 @@
 *.md diff=markdown
 *.php diff=php
 
+# Files consumed inside Linux containers — pin LF explicitly so a Windows
+# checkout cannot ship CRLF (which breaks #! shebangs in Alpine).
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+install-rocky9.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+*.conf text eol=lf
+
+# Binary blobs in this repo — never touch.
+*.xlsx binary
+
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
