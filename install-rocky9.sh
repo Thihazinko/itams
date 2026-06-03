@@ -51,8 +51,12 @@ backup_if_exists() {
 }
 
 rand_pw() {
-    # 24-char URL-safe random password (no characters that bite shells / URLs)
-    tr -dc 'A-Za-z0-9_.-' </dev/urandom | head -c 24
+    # 128 bits of entropy as a hex string — URL- and shell-safe.
+    # Why not `tr </dev/urandom | head -c N`: under `set -euo pipefail`,
+    # /dev/urandom is unbounded, so when `head` closes the pipe after N bytes
+    # `tr` dies of SIGPIPE (exit 141), pipefail propagates it, and set -e
+    # aborts the script silently right after the URL prompt.
+    openssl rand -hex 16
 }
 
 #=============================================================================
