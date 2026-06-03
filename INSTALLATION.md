@@ -207,64 +207,53 @@ First build takes ~3–5 min (pulls base images, runs `npm ci` + `composer insta
 
 ### 4.8 Generate `APP_KEY`
 
-You have two options. Pick whichever you're more comfortable with.
+A Laravel `APP_KEY` is literally `base64:` followed by the base64 of 32 random bytes — exactly what `openssl rand -base64 32` produces. So the easiest and most reliable path generates the key on the **host** with openssl. No Docker, no entrypoint, no DB needed at this step.
 
-#### Option A — Scripted (one-shot)
+#### Option A — Generate on the host with openssl (recommended)
 
 ```bash
-APP_KEY=$(docker compose run --rm --no-deps -T app php artisan key:generate --show 2>/dev/null \
-    | tr -d '\r' \
-    | grep -oE 'base64:[A-Za-z0-9+/=]+' \
-    | tail -n1)
-
-# Sanity-check before touching .env
+APP_KEY="base64:$(openssl rand -base64 32)"
 echo "Got: $APP_KEY"
-[ -n "$APP_KEY" ] || { echo "ERROR: APP_KEY extraction failed"; exit 1; }
-
 sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
 grep ^APP_KEY= .env
 ```
 
-Why the extra pipeline:
+You should see one clean line:
 
-- `--no-deps` keeps `db` from starting just to print a key.
-- `-T` disables TTY allocation so docker compose doesn't dump `[+] Creating…` spinner UI into stdout.
-- `2>/dev/null` drops residual progress messages on stderr.
-- `grep -oE 'base64:…'` extracts ONLY the actual key, so even if something else prints, you don't end up with a multi-line `APP_KEY` (which would crash `sed` with `unterminated 's' command`).
+```
+APP_KEY=base64:abc...XYZ=
+```
 
-> ⚠️ **Don't shortcut to the naïve form.** The "simple" version below — which the older guide used — captures docker compose's progress spinner alongside the key, producing a multi-line `APP_KEY` that crashes `sed`:
->
-> ```bash
-> # BROKEN — do not use:
-> APP_KEY=$(docker compose run --rm --no-deps app php artisan key:generate --show)
-> sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
-> # → sed: -e expression #1, char NN: unterminated `s' command
-> ```
+That's mathematically identical to what `php artisan key:generate --show` produces — and it sidesteps the issue described below.
 
-#### Option B — Truly manual (copy / paste)
+#### Option B — Via artisan (only after `db` is up)
 
-Some people prefer to eyeball the key and paste it themselves:
+If you'd rather use artisan, you must start the `db` service first, because the `app` container's entrypoint waits for MySQL before letting any command run:
 
 ```bash
-# 1. Print the key
-docker compose run --rm --no-deps -T app php artisan key:generate --show
-# → base64:abc123…=     (copy this whole line, including the `base64:` prefix)
+# 1. Start just the database
+docker compose up -d db
+sleep 10   # give MySQL a moment to be ready
 
-# 2. Edit .env and replace the APP_KEY= line
-vi .env
-# (or: nano .env)
+# 2. Now the entrypoint can finish its wait; capture only the key
+APP_KEY=$(docker compose run --rm -T app php artisan key:generate --show 2>/dev/null \
+    | tr -d '\r' \
+    | grep -oE 'base64:[A-Za-z0-9+/=]+' \
+    | tail -n1)
 
-# 3. Verify
+# 3. Sanity-check, then write
+echo "Got: $APP_KEY"
+[ -n "$APP_KEY" ] || { echo "ERROR: APP_KEY extraction failed"; exit 1; }
+sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
 grep ^APP_KEY= .env
 ```
 
-You should see exactly **one** line:
-
-```
-APP_KEY=base64:abc123…=
-```
-
-with no trailing spaces, no extra `APP_KEY=` line elsewhere, and no embedded newlines.
+> ⚠️ **What goes wrong with the naïve form** — `docker compose run --rm --no-deps app php artisan key:generate --show`:
+> - `--no-deps` keeps `db` from starting.
+> - The image's entrypoint runs first and tries `php -r "new PDO('mysql:host=db;…')"` to wait for MySQL.
+> - With no `db` service in the network, that resolves to `getaddrinfo for db failed: Name does not resolve` and the wait loop spins forever (often spilling the PDO trace to stderr despite `2>/dev/null`, because PHP 8.2's `SensitiveParameterValue` exception handler doesn't always honour the redirect).
+>
+> Use Option A above to skip this whole problem.
 
 ### 4.9 First bring-up
 
@@ -477,6 +466,7 @@ docker compose up -d
 | `sed: -e expression #1, char NN: unterminated 's' command` while setting `APP_KEY` | The captured key contained extra lines (docker compose progress UI). Re-run the §4.8 command — the updated form passes `-T`, strips CR, and `grep`s only the `base64:` token so multi-line output can't corrupt sed. Or use §4.8 Option B (copy/paste). |
 | `WARN[0000] mount of type 'volume' should not define 'bind' option` when running `docker compose run` or `up` | An older `docker-compose.yml` had `:Z` (an SELinux *bind-mount* flag) on **named volume** mounts. Harmless in compose v2 today, will become an error in future versions. Fix: pull the current `docker-compose.yml` from the repo — `:Z` has been removed from the `storage` volume mounts and is kept only on the `nginx/default.conf` bind mount, where it belongs. |
 | `APP_KEY=` line in `.env` is empty, garbled, or duplicated after §4.8 | The naïve `APP_KEY=$(docker compose run …)` form captured progress UI lines into the variable, and the subsequent `sed` either silently wrote junk or aborted. Edit `.env` manually so there is exactly one line `APP_KEY=base64:…=`, then continue. |
+| `PDOException: SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for db failed: Name does not resolve` during §4.8 | The entrypoint's MySQL-wait loop is trying to connect to the `db` service, but `--no-deps` prevented it from starting, so the hostname doesn't exist in Docker's network. Use §4.8 **Option A** (openssl on the host) — it sidesteps Docker entirely for this step. |
 | `db` restart-loops with `Access denied for user 'root'` | Password mismatch with the existing `dbdata` volume. Either align `.env` with the original password, or wipe the volume (**DATA LOSS**): back up first, then `docker compose down -v`. |
 | Migrations don't run | Tail `docker compose logs app` — you should see `Waiting for MySQL...` then migration output. If not, the entrypoint failed earlier. |
 | Queue jobs not processing | `docker compose ps` — is `queue` running? `docker compose logs -f queue`. Confirm dispatching code uses `QUEUE_CONNECTION=database` (matches the worker). |
