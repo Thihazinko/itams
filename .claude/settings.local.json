@@ -153,7 +153,8 @@
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --path=purchase)",
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --path=quotations)",
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:clear)",
-      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:cache)"
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:cache)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root rrs_system -e \"SHOW COLUMNS FROM pc_assets LIKE 'department';\")"
     ]
   }
 }
