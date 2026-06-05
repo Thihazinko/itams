@@ -28,6 +28,9 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
+            echo "==> Marking repo directory as safe for git"
+            git config --global --add safe.directory ${{ secrets.DEPLOY_PATH }}
+
             echo "==> Fetching latest code"
             git fetch --all --prune
             git reset --hard origin/main
