@@ -1,0 +1,45 @@
+name: Deploy to Rocky 9
+
+# Continuously deploy to the Rocky 9 Docker host on every push to main.
+# Also runnable manually from the Actions tab (workflow_dispatch).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two deploys run at once; let an in-progress deploy finish.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "==> Fetching latest code"
+            git fetch --all --prune
+            git reset --hard origin/main
+
+            echo "==> Building app image"
+            docker compose build app
+
+            echo "==> Recreating containers (picks up new image + .env)"
+            docker compose up -d --force-recreate app queue nginx
+
+            echo "==> Pruning old images"
+            docker image prune -f
+
+            echo "==> Deploy complete"
+            docker compose ps
