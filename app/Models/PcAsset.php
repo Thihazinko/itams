@@ -8,7 +8,7 @@ class PcAsset extends Model
 {
     public const DEPARTMENTS = [
         'Admin', 'Finance', 'HR', 'IT Development', 'Contract',
-        'Offshore', 'SST', 'BPO', 'Infra',
+        'Offshore', 'SST', 'BPO', 'Infra', 'Sale',
     ];
 
     protected $fillable = [
