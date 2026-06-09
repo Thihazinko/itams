@@ -48,6 +48,20 @@
                 <label class="form-label">Operating System</label>
                 <input type="text" name="operating_system" value="{{ old('operating_system', $asset->operating_system ?? '') }}" class="form-control" placeholder="e.g. Windows 11 Pro">
             </div>
+            <div class="col-md-4">
+                <label class="form-label">License Key</label>
+                <input type="text" name="license_key" value="{{ old('license_key', $asset->license_key ?? '') }}" class="form-control" placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Expire Date</label>
+                @php($isPermanent = (bool) old('expire_permanent', $asset->expire_permanent ?? false))
+                <input type="date" name="expire_date" data-expire-date value="{{ old('expire_date', isset($asset->expire_date) ? $asset->expire_date->format('Y-m-d') : '') }}" class="form-control" @disabled($isPermanent)>
+                <div class="form-check mt-1">
+                    <input type="hidden" name="expire_permanent" value="0">
+                    <input type="checkbox" name="expire_permanent" value="1" id="expire_permanent" data-expire-permanent class="form-check-input" @checked($isPermanent)>
+                    <label for="expire_permanent" class="form-check-label small">Permanent</label>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -130,3 +144,19 @@
     <button class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
     <a href="{{ route('pc-assets.index') }}" class="btn btn-outline-secondary">Cancel</a>
 </div>
+
+<script>
+    (function () {
+        const permanent = document.querySelector('[data-expire-permanent]');
+        const expireDate = document.querySelector('[data-expire-date]');
+        if (!permanent || !expireDate) return;
+
+        const sync = () => {
+            expireDate.disabled = permanent.checked;
+            if (permanent.checked) expireDate.value = '';
+        };
+
+        permanent.addEventListener('change', sync);
+        sync();
+    })();
+</script>

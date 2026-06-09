@@ -22,8 +22,8 @@ class PcAssetsExport implements FromCollection, WithHeadings, WithMapping, Shoul
         return [
             'computer_id', 'hostname', 'employee_name', 'status', 'department',
             'location', 'brand', 'model', 'serial_number', 'cpu', 'ram', 'ssd',
-            'hdd', 'display', 'operating_system', 'admin_password', 'username',
-            'password', 'purchased_date', 'warranty_period', 'remarks',
+            'hdd', 'display', 'operating_system', 'license_key', 'admin_password', 'username',
+            'password', 'purchased_date', 'expire_date', 'warranty_period', 'remarks',
         ];
     }
 
@@ -45,10 +45,12 @@ class PcAssetsExport implements FromCollection, WithHeadings, WithMapping, Shoul
             $asset->hdd,
             $asset->display,
             $asset->operating_system,
+            $asset->license_key,
             $asset->admin_password,
             $asset->username,
             $asset->password,
             optional($asset->purchased_date)->format('Y-m-d'),
+            $asset->expire_permanent ? 'Permanent' : optional($asset->expire_date)->format('Y-m-d'),
             $asset->warranty_period,
             $asset->remarks,
         ];

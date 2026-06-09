@@ -15,8 +15,8 @@ class PcAssetsTemplate implements FromArray, WithHeadings, ShouldAutoSize, WithS
         return [
             'computer_id', 'hostname', 'employee_name', 'status', 'department',
             'location', 'brand', 'model', 'serial_number', 'cpu', 'ram', 'ssd',
-            'hdd', 'display', 'operating_system', 'admin_password', 'username',
-            'password', 'purchased_date', 'warranty_period', 'remarks',
+            'hdd', 'display', 'operating_system', 'license_key', 'admin_password', 'username',
+            'password', 'purchased_date', 'expire_date', 'warranty_period', 'remarks',
         ];
     }
 
@@ -26,8 +26,8 @@ class PcAssetsTemplate implements FromArray, WithHeadings, ShouldAutoSize, WithS
             [
                 'PC-SAMPLE-01', 'IT-WS99', 'Sample Employee', 'Active', 'IT Development',
                 'Office', 'Dell', 'Latitude 5430', 'SN0000', 'Intel Core i7-1265U', '16GB DDR4', '512GB NVMe',
-                '1TB HDD', '14" FHD', 'Windows 11 Pro', 'sample-admin-pw', 'jdoe',
-                'sample-user-pw', '2024-01-15', '3 years', 'Delete this row before importing',
+                '1TB HDD', '14" FHD', 'Windows 11 Pro', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', 'sample-admin-pw', 'jdoe',
+                'sample-user-pw', '2024-01-15', '2027-01-15', '3 years', 'Delete this row before importing',
             ],
         ];
     }

@@ -211,7 +211,7 @@ class PcAssetController extends Controller
 
     private function validateData(Request $request, ?int $id = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'computer_id' => "required|string|max:255|unique:pc_assets,computer_id,{$id}",
             'hostname' => 'required|string|max:255',
             'employee_name' => 'nullable|string|max:255',
@@ -227,12 +227,23 @@ class PcAssetController extends Controller
             'hdd' => 'nullable|string|max:255',
             'display' => 'nullable|string|max:255',
             'operating_system' => 'nullable|string|max:255',
+            'license_key' => 'nullable|string|max:255',
             'admin_password' => 'nullable|string|max:255',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:255',
             'purchased_date' => 'nullable|date',
+            'expire_permanent' => 'boolean',
+            'expire_date' => 'nullable|date',
             'warranty_period' => 'nullable|string|max:255',
             'remarks' => 'nullable|string',
         ]);
+
+        // A permanent license never expires — clear any date.
+        $data['expire_permanent'] = (bool) ($data['expire_permanent'] ?? false);
+        if ($data['expire_permanent']) {
+            $data['expire_date'] = null;
+        }
+
+        return $data;
     }
 }

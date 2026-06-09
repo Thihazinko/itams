@@ -70,6 +70,18 @@
                     <dt class="col-sm-4 text-muted">Operating System</dt>
                     <dd class="col-sm-8">{{ $asset->operating_system ?: '—' }}</dd>
 
+                    <dt class="col-sm-4 text-muted">License Key</dt>
+                    <dd class="col-sm-8">{{ $asset->license_key ?: '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Expire Date</dt>
+                    <dd class="col-sm-8">
+                        @if($asset->expire_permanent)
+                            <span class="badge bg-success-subtle text-success-emphasis">Permanent</span>
+                        @else
+                            {{ $asset->expire_date?->format('Y-m-d') ?? '—' }}
+                        @endif
+                    </dd>
+
                     <dt class="col-sm-4 text-muted">CPU</dt>
                     <dd class="col-sm-8">{{ $asset->cpu ?: '—' }}</dd>
 

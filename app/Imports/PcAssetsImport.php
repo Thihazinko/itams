@@ -40,6 +40,8 @@ class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             return null;
         }
 
+        $permanent = strtolower(trim((string) ($row['expire_date'] ?? ''))) === 'permanent';
+
         $computerId = trim((string) ($row['computer_id'] ?? ''));
         if ($computerId !== '' && isset($this->existingIds()[strtolower($computerId)])) {
             $this->skipped++;
@@ -65,10 +67,13 @@ class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'hdd' => $row['hdd'] ?? null,
             'display' => $row['display'] ?? null,
             'operating_system' => $row['operating_system'] ?? null,
+            'license_key' => $row['license_key'] ?? null,
             'admin_password' => isset($row['admin_password']) && $row['admin_password'] !== '' ? (string) $row['admin_password'] : null,
             'username' => isset($row['username']) && $row['username'] !== '' ? (string) $row['username'] : null,
             'password' => isset($row['password']) && $row['password'] !== '' ? (string) $row['password'] : null,
             'purchased_date' => $this->parseDate($row['purchased_date'] ?? null),
+            'expire_date' => $permanent ? null : $this->parseDate($row['expire_date'] ?? null),
+            'expire_permanent' => $permanent,
             'warranty_period' => $row['warranty_period'] ?? null,
             'remarks' => $row['remarks'] ?? null,
             'modified_by' => Auth::user()?->name ?? 'Import',
