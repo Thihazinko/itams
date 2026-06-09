@@ -241,10 +241,13 @@ class LicenseContractController extends Controller
             'remarks' => 'nullable|string',
         ]);
 
-        // A permanent license never expires — clear any date.
+        // A permanent license never expires and is a one-time purchase —
+        // clear the expiry date and the previous/renewal cost split (the single
+        // cost lives in renewal_cost).
         $data['expire_permanent'] = (bool) ($data['expire_permanent'] ?? false);
         if ($data['expire_permanent']) {
             $data['expire_date'] = null;
+            $data['previous_cost'] = null;
         }
 
         return $data;

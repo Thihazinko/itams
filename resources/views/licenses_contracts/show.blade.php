@@ -123,22 +123,27 @@
                     <dt class="col-sm-6 text-muted">Currency</dt>
                     <dd class="col-sm-6">{{ $item->currency ?: 'MMK' }}</dd>
 
-                    <dt class="col-sm-6 text-muted">Previous Cost</dt>
-                    <dd class="col-sm-6">{{ $prev !== null ? number_format($prev, 2) : '—' }}</dd>
+                    @if($isPermanent)
+                        <dt class="col-sm-6 text-muted">Cost</dt>
+                        <dd class="col-sm-6">{{ $curr !== null ? number_format($curr, 2) : '—' }}</dd>
+                    @else
+                        <dt class="col-sm-6 text-muted">Previous Cost</dt>
+                        <dd class="col-sm-6">{{ $prev !== null ? number_format($prev, 2) : '—' }}</dd>
 
-                    <dt class="col-sm-6 text-muted">Renewal Cost</dt>
-                    <dd class="col-sm-6">{{ $curr !== null ? number_format($curr, 2) : '—' }}</dd>
+                        <dt class="col-sm-6 text-muted">Renewal Cost</dt>
+                        <dd class="col-sm-6">{{ $curr !== null ? number_format($curr, 2) : '—' }}</dd>
 
-                    <dt class="col-sm-6 text-muted">Price Change</dt>
-                    <dd class="col-sm-6">
-                        @if($priceChange)
-                            <span class="badge bg-{{ $priceChange['tone'] }}-subtle text-{{ $priceChange['tone'] }}-emphasis d-inline-flex align-items-center gap-1">
-                                <i class="bi {{ $priceChange['icon'] }}"></i> {{ trim($priceChange['label']) }}
-                            </span>
-                        @else
-                            <span class="text-muted">—</span>
-                        @endif
-                    </dd>
+                        <dt class="col-sm-6 text-muted">Price Change</dt>
+                        <dd class="col-sm-6">
+                            @if($priceChange)
+                                <span class="badge bg-{{ $priceChange['tone'] }}-subtle text-{{ $priceChange['tone'] }}-emphasis d-inline-flex align-items-center gap-1">
+                                    <i class="bi {{ $priceChange['icon'] }}"></i> {{ trim($priceChange['label']) }}
+                                </span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </dd>
+                    @endif
                 </dl>
             </div>
         </div>

@@ -68,7 +68,7 @@
     <div class="card-header bg-transparent d-flex align-items-center gap-2">
         <i class="bi bi-currency-exchange text-primary"></i>
         <strong>Pricing</strong>
-        <span class="text-muted small ms-2">Price-change indicator on the list is computed from previous vs renewal cost.</span>
+        <span class="text-muted small ms-2" data-pricing-help>Price-change indicator on the list is computed from previous vs renewal cost.</span>
     </div>
     <div class="card-body">
         <div class="row g-3">
@@ -80,12 +80,12 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4" data-pricing-previous>
                 <label class="form-label">Previous Cost</label>
                 <input type="number" step="0.01" min="0" name="previous_cost" value="{{ old('previous_cost', $item->previous_cost ?? '') }}" class="form-control">
             </div>
             <div class="col-md-4">
-                <label class="form-label">Renewal Cost</label>
+                <label class="form-label" data-pricing-cost-label>Renewal Cost</label>
                 <input type="number" step="0.01" min="0" name="renewal_cost" value="{{ old('renewal_cost', $item->renewal_cost ?? '') }}" class="form-control">
             </div>
         </div>
@@ -113,10 +113,25 @@
         const expireDate = document.querySelector('[data-expire-date]');
         if (!permanent || !expireDate) return;
 
+        // A permanent license is a one-time purchase — no renewal, so there's
+        // only a single cost (Previous Cost is hidden and cleared).
+        const previousCostCol = document.querySelector('[data-pricing-previous]');
+        const previousCostInput = previousCostCol ? previousCostCol.querySelector('input') : null;
+        const costLabel = document.querySelector('[data-pricing-cost-label]');
+        const pricingHelp = document.querySelector('[data-pricing-help]');
+
         const sync = () => {
             expireDate.disabled = permanent.checked;
             expireDate.required = !permanent.checked;
             if (permanent.checked) expireDate.value = '';
+
+            if (previousCostCol) previousCostCol.classList.toggle('d-none', permanent.checked);
+            if (previousCostInput) {
+                previousCostInput.disabled = permanent.checked;
+                if (permanent.checked) previousCostInput.value = '';
+            }
+            if (costLabel) costLabel.textContent = permanent.checked ? 'Cost' : 'Renewal Cost';
+            if (pricingHelp) pricingHelp.classList.toggle('d-none', permanent.checked);
         };
 
         permanent.addEventListener('change', sync);
