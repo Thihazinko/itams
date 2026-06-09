@@ -5,6 +5,7 @@
 @section('content')
 @php
     $isAdmin = auth()->user()->isAdmin();
+    $canEdit = auth()->user()->canEdit('pc_assets');
     $statusOrder = ['Active', 'Free', 'Damage', 'Retirement', 'Low Performance'];
     $chartData = array_map(fn ($s) => (int) ($statusCounts[$s] ?? 0), $statusOrder);
     $chartTotal = array_sum($chartData);
@@ -40,10 +41,12 @@
                 <li><a class="dropdown-item" href="{{ route('pc-assets.export', ['format' => 'csv']) }}"><i class="bi bi-file-earmark-text"></i> CSV (.csv)</a></li>
             </ul>
         </div>
-        @if($isAdmin)
+        @if($canEdit)
         <button type="button" class="quick-action" data-bs-toggle="modal" data-bs-target="#importPcModal">
             <i class="bi bi-upload"></i> Import
         </button>
+        @endif
+        @if($isAdmin)
         <a href="{{ route('pc-assets.create') }}" class="quick-action quick-action-primary">
             <i class="bi bi-plus-circle"></i> Add PC
         </a>

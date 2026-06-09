@@ -5,6 +5,7 @@
 @section('content')
 @php
     $isAdmin = auth()->user()->isAdmin();
+    $canEdit = auth()->user()->canEdit('subscriptions');
     $kpiTotal    = (int) ($kpis['total']    ?? 0);
     $kpiActive   = (int) ($kpis['active']   ?? 0);
     $kpiExpiring = (int) ($kpis['expiring'] ?? 0);
@@ -28,10 +29,12 @@
                 <li><a class="dropdown-item" href="{{ route('subscriptions.export', ['format' => 'csv']) }}"><i class="bi bi-file-earmark-text"></i> CSV (.csv)</a></li>
             </ul>
         </div>
-        @if($isAdmin)
+        @if($canEdit)
         <button type="button" class="quick-action" data-bs-toggle="modal" data-bs-target="#importSubModal">
             <i class="bi bi-upload"></i> Import
         </button>
+        @endif
+        @if($isAdmin)
         <a href="{{ route('subscriptions.create') }}" class="quick-action quick-action-primary">
             <i class="bi bi-plus-circle"></i> Add Subscription
         </a>
@@ -39,7 +42,7 @@
     </div>
 </div>
 
-@if($isAdmin)
+@if($canEdit)
 <div class="modal fade" id="importSubModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

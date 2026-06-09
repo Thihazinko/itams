@@ -83,6 +83,8 @@ class PcAssetController extends Controller
 
     public function show(PcAsset $pcAsset)
     {
+        $pcAsset->load('assignments');
+
         return view('pc_assets.show', ['asset' => $pcAsset]);
     }
 

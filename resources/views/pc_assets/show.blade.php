@@ -112,6 +112,48 @@
                 </dl>
             </div>
         </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-transparent d-flex align-items-center gap-2">
+                <i class="bi bi-people text-primary"></i>
+                <strong>Employee History</strong>
+                <span class="text-muted small ms-2">Who has used this PC over time.</span>
+            </div>
+            <div class="card-body">
+                @forelse($asset->assignments as $assignment)
+                    <div class="d-flex gap-3 py-2 @if(!$loop->last) border-bottom border-light-subtle @endif">
+                        <div class="text-center" style="min-width: 36px;">
+                            @if($assignment->released_at)
+                                <i class="bi bi-person text-muted fs-5"></i>
+                            @else
+                                <i class="bi bi-person-fill-check text-success fs-5"></i>
+                            @endif
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
+                                <span class="fw-semibold">{{ $assignment->employee_name ?: '—' }}</span>
+                                @if($assignment->released_at)
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">Past</span>
+                                @else
+                                    <span class="badge bg-success-subtle text-success-emphasis">Current</span>
+                                @endif
+                            </div>
+                            <div class="text-muted small">
+                                @if($assignment->department){{ $assignment->department }} &middot; @endif
+                                {{ $assignment->assigned_at?->format('Y-m-d') ?? '—' }}
+                                &rarr;
+                                {{ $assignment->released_at?->format('Y-m-d') ?? 'present' }}
+                            </div>
+                            @if($assignment->recorded_by)
+                                <div class="text-muted" style="font-size: .72rem;">recorded by {{ $assignment->recorded_by }}</div>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-muted small mb-0">No assignment history yet. It will start tracking when this PC is assigned to an employee.</p>
+                @endforelse
+            </div>
+        </div>
     </div>
 
     <div class="col-lg-4">
