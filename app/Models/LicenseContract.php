@@ -16,13 +16,14 @@ class LicenseContract extends Model
 
     protected $fillable = [
         'software_name', 'status', 'renewal_type', 'license_info',
-        'last_renewal_date', 'expire_date', 'vendor_name',
+        'last_renewal_date', 'expire_date', 'expire_permanent', 'vendor_name',
         'previous_cost', 'renewal_cost', 'currency',
         'remarks', 'modified_by',
     ];
 
     protected $casts = [
         'expire_date' => 'date',
+        'expire_permanent' => 'boolean',
         'last_renewal_date' => 'date',
         'previous_cost' => 'decimal:2',
         'renewal_cost' => 'decimal:2',

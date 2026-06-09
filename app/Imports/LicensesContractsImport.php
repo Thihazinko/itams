@@ -52,13 +52,16 @@ class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation
         }
         $this->existingKeys[$key] = true;
 
+        $permanent = strtolower(trim((string) ($row['expire_date'] ?? ''))) === 'permanent';
+
         return new LicenseContract([
             'software_name' => $row['software_name'] ?? null,
             'status' => $row['status'] ?? 'Active',
             'renewal_type' => $row['renewal_type'] ?? 'Yearly',
             'license_info' => $row['license_info'] ?? null,
             'last_renewal_date' => $this->parseDate($row['last_renewal_date'] ?? null),
-            'expire_date' => $this->parseDate($row['expire_date'] ?? null),
+            'expire_date' => $permanent ? null : $this->parseDate($row['expire_date'] ?? null),
+            'expire_permanent' => $permanent,
             'vendor_name' => $row['vendor_name'] ?? null,
             'previous_cost' => isset($row['previous_cost']) && $row['previous_cost'] !== '' ? (float) $row['previous_cost'] : null,
             'renewal_cost' => isset($row['renewal_cost']) && $row['renewal_cost'] !== '' ? (float) $row['renewal_cost'] : null,

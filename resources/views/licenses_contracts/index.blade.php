@@ -275,8 +275,9 @@
                         @forelse($items as $i => $item)
                             @php
                                 $today = \Carbon\Carbon::today();
-                                $days = (int) $today->diffInDays($item->expire_date, false);
-                                $isOverdue = $days < 0 && !in_array($item->status, ['Terminated']);
+                                $isPermanent = (bool) $item->expire_permanent;
+                                $days = $isPermanent ? null : (int) $today->diffInDays($item->expire_date, false);
+                                $isOverdue = !$isPermanent && $days < 0 && !in_array($item->status, ['Terminated']);
                                 $statusTone = match($item->status) {
                                     'Active'     => 'success',
                                     'Pending'    => 'warning',
@@ -326,11 +327,15 @@
                                 </td>
                                 <td class="text-muted small text-nowrap">{{ $item->last_renewal_date?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="text-nowrap">
-                                    <div class="small">{{ $item->expire_date->format('Y-m-d') }}</div>
-                                    @if($isOverdue)
-                                        <span class="badge bg-danger-subtle text-danger-emphasis" style="font-size:.65rem;">{{ abs($days) }}d overdue</span>
-                                    @elseif($item->status === 'Active' && $days <= 30)
-                                        <span class="badge bg-warning-subtle text-warning-emphasis" style="font-size:.65rem;">{{ $days }}d left</span>
+                                    @if($isPermanent)
+                                        <span class="badge bg-success-subtle text-success-emphasis">Permanent</span>
+                                    @else
+                                        <div class="small">{{ $item->expire_date->format('Y-m-d') }}</div>
+                                        @if($isOverdue)
+                                            <span class="badge bg-danger-subtle text-danger-emphasis" style="font-size:.65rem;">{{ abs($days) }}d overdue</span>
+                                        @elseif($item->status === 'Active' && $days <= 30)
+                                            <span class="badge bg-warning-subtle text-warning-emphasis" style="font-size:.65rem;">{{ $days }}d left</span>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="text-muted small">{{ $item->renewal_type }}</td>

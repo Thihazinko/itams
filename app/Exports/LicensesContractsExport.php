@@ -34,7 +34,7 @@ class LicensesContractsExport implements FromCollection, WithHeadings, WithMappi
             $item->renewal_type,
             $item->license_info,
             optional($item->last_renewal_date)->format('Y-m-d'),
-            optional($item->expire_date)->format('Y-m-d'),
+            $item->expire_permanent ? 'Permanent' : optional($item->expire_date)->format('Y-m-d'),
             $item->vendor_name,
             $item->previous_cost,
             $item->renewal_cost,

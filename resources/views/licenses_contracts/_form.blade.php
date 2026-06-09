@@ -50,9 +50,15 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Expire Date <span class="text-danger">*</span></label>
-                <input type="date" name="expire_date" value="{{ old('expire_date', isset($item->expire_date) ? $item->expire_date->format('Y-m-d') : '') }}" class="form-control @error('expire_date') is-invalid @enderror" required>
+                @php($isPermanent = (bool) old('expire_permanent', $item->expire_permanent ?? false))
+                <input type="date" name="expire_date" data-expire-date value="{{ old('expire_date', isset($item->expire_date) ? $item->expire_date->format('Y-m-d') : '') }}" class="form-control @error('expire_date') is-invalid @enderror" @required(!$isPermanent) @disabled($isPermanent)>
                 <small class="text-muted">Reminder fires 30 days before this date.</small>
                 @error('expire_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="form-check mt-1">
+                    <input type="hidden" name="expire_permanent" value="0">
+                    <input type="checkbox" name="expire_permanent" value="1" id="expire_permanent" data-expire-permanent class="form-check-input" @checked($isPermanent)>
+                    <label for="expire_permanent" class="form-check-label small">Permanent (no expiry — disables reminders)</label>
+                </div>
             </div>
         </div>
     </div>
@@ -100,3 +106,20 @@
     <button class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
     <a href="{{ route('licenses-contracts.index') }}" class="btn btn-outline-secondary">Cancel</a>
 </div>
+
+<script>
+    (function () {
+        const permanent = document.querySelector('[data-expire-permanent]');
+        const expireDate = document.querySelector('[data-expire-date]');
+        if (!permanent || !expireDate) return;
+
+        const sync = () => {
+            expireDate.disabled = permanent.checked;
+            expireDate.required = !permanent.checked;
+            if (permanent.checked) expireDate.value = '';
+        };
+
+        permanent.addEventListener('change', sync);
+        sync();
+    })();
+</script>

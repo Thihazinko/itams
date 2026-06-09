@@ -221,18 +221,27 @@ class LicenseContractController extends Controller
 
     private function validateData(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'software_name' => 'required|string|max:255',
             'status' => 'required|in:Active,Expired,Terminated,Pending',
             'renewal_type' => 'required|in:Yearly,Monthly,Pay as you go,One Time',
             'license_info' => 'nullable|string',
             'last_renewal_date' => 'nullable|date',
-            'expire_date' => 'required|date',
+            'expire_permanent' => 'boolean',
+            'expire_date' => 'nullable|required_if:expire_permanent,0,false|date',
             'vendor_name' => 'nullable|string|max:255',
             'previous_cost' => 'nullable|numeric|min:0',
             'renewal_cost' => 'nullable|numeric|min:0',
             'currency' => 'required|in:MMK,JPY,USD',
             'remarks' => 'nullable|string',
         ]);
+
+        // A permanent license never expires — clear any date.
+        $data['expire_permanent'] = (bool) ($data['expire_permanent'] ?? false);
+        if ($data['expire_permanent']) {
+            $data['expire_date'] = null;
+        }
+
+        return $data;
     }
 }
