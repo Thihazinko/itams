@@ -191,10 +191,35 @@
             });
         }
 
+        // navigator.clipboard only exists in a secure context (HTTPS/localhost).
+        // Over plain HTTP in production it's undefined, so fall back to execCommand.
+        async function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                if (!document.execCommand('copy')) {
+                    throw new Error('execCommand returned false');
+                }
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
         document.querySelectorAll('[data-copy]').forEach(btn => {
             btn.addEventListener('click', async () => {
                 try {
-                    await navigator.clipboard.writeText(btn.dataset.copy);
+                    await copyText(btn.dataset.copy);
                     const icon = btn.querySelector('i');
                     const original = icon.className;
                     icon.className = 'bi bi-check2 text-success';
