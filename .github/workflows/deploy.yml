@@ -39,7 +39,7 @@ jobs:
             docker compose build app
 
             echo "==> Recreating containers (picks up new image + .env)"
-            docker compose up -d --force-recreate app queue nginx
+            docker compose up -d --force-recreate app queue scheduler nginx
 
             echo "==> Pruning old images"
             docker image prune -f

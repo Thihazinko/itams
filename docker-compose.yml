@@ -19,6 +19,9 @@ services:
       - "${HTTP_PORT:-80}:80"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro,Z
+      # Share the app's storage volume so nginx can serve uploaded files
+      # (avatars under storage/app/public) at /storage/...
+      - storage:/var/www/html/storage:ro
     depends_on:
       - app
 
@@ -43,6 +46,22 @@ services:
     image: infra-ninja-app:latest
     restart: unless-stopped
     command: php artisan queue:work --tries=3 --timeout=90
+    env_file: .env
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
+
+  # Runs the Laravel scheduler (schedule:work invokes schedule:run every
+  # minute). Drives the daily app:check-expirations reminder job defined in
+  # routes/console.php — without this, no expiry reminder emails are sent.
+  scheduler:
+    image: infra-ninja-app:latest
+    restart: unless-stopped
+    command: php artisan schedule:work
     env_file: .env
     volumes:
       - storage:/var/www/html/storage
