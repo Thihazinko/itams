@@ -362,6 +362,7 @@
                                     @endif
                                 </td>
                                 <td class="text-end text-nowrap pe-3">
+                                    <a href="{{ route('licenses-contracts.show', $item) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('licenses-contracts.edit', $item) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     @if($isAdmin)
                                     @php

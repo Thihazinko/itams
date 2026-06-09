@@ -77,7 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::get('licenses-contracts/template', [LicenseContractController::class, 'template'])->name('licenses-contracts.template');
         Route::resource('licenses-contracts', LicenseContractController::class)
             ->parameters(['licenses-contracts' => 'licenses_contract'])
-            ->only(['index']);
+            ->only(['index', 'show']);
     });
     Route::middleware('module:licenses_contracts,edit')->group(function () {
         Route::post('licenses-contracts/import', [LicenseContractController::class, 'import'])->name('licenses-contracts.import');

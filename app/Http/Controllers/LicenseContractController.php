@@ -100,6 +100,11 @@ class LicenseContractController extends Controller
         return redirect()->route('licenses-contracts.index')->with('success', 'License/Contract created.');
     }
 
+    public function show(LicenseContract $licenses_contract)
+    {
+        return view('licenses_contracts.show', ['item' => $licenses_contract]);
+    }
+
     public function edit(LicenseContract $licenses_contract)
     {
         return view('licenses_contracts.edit', ['item' => $licenses_contract]);
