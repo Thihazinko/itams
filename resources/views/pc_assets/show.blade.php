@@ -107,9 +107,114 @@
                     <dt class="col-sm-4 text-muted">Warranty Period</dt>
                     <dd class="col-sm-8">{{ $asset->warranty_period ?: '—' }}</dd>
 
+                    <dt class="col-sm-4 text-muted">Warranty Status</dt>
+                    <dd class="col-sm-8">
+                        @php
+                            $warrantyTone = match($asset->warranty_status) {
+                                'In Warranty'   => 'success',
+                                'Expiring Soon' => 'warning',
+                                'Expired'       => 'danger',
+                                default         => 'secondary',
+                            };
+                        @endphp
+                        <span class="badge bg-{{ $warrantyTone }}-subtle text-{{ $warrantyTone }}-emphasis">{{ $asset->warranty_status }}</span>
+                        @if($asset->warranty_end_date)
+                            <span class="text-muted small ms-1">until {{ $asset->warranty_end_date->format('Y-m-d') }}</span>
+                        @endif
+                    </dd>
+
                     <dt class="col-sm-4 text-muted">Remarks</dt>
                     <dd class="col-sm-8" style="white-space: pre-line;">{{ $asset->remarks ?: '—' }}</dd>
                 </dl>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-transparent d-flex align-items-center gap-2">
+                <i class="bi bi-box-seam text-primary"></i>
+                <strong>Software List</strong>
+                <span class="text-muted small ms-2">Installed software on this PC.</span>
+            </div>
+            <div class="card-body">
+                @if($asset->software->isNotEmpty())
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Software</th>
+                                    <th>Version</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($asset->software as $software)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $software->name }}</td>
+                                        <td>{{ $software->version ?: '—' }}</td>
+                                        <td>{{ $software->notes ?: '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-muted small mb-0">No software listed yet. Use Edit to add software.</p>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+                <span class="d-flex align-items-center gap-2"><i class="bi bi-shield-lock text-primary"></i> <strong class="small">Credentials</strong></span>
+                <button type="button" class="btn btn-sm btn-icon-soft" data-credential-toggle title="Show / hide passwords">
+                    <i class="bi bi-eye-slash" data-credential-icon></i>
+                </button>
+            </div>
+            <div class="card-body p-2 small">
+                <div class="mb-2">
+                    <small class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: .68rem; letter-spacing: .05em;">Username</small>
+                    @if($asset->username)
+                        <div class="d-flex align-items-center gap-2">
+                            <code class="flex-grow-1 text-truncate" data-copy-target>{{ $asset->username }}</code>
+                            <button type="button" class="btn btn-sm btn-icon-soft" data-copy="{{ $asset->username }}" title="Copy"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                    @else
+                        <span class="text-muted small">—</span>
+                    @endif
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: .68rem; letter-spacing: .05em;">Password</small>
+                    @if($asset->password)
+                        <div class="d-flex align-items-center gap-2">
+                            <code class="flex-grow-1 text-truncate" data-credential data-value="{{ $asset->password }}">••••••••</code>
+                            <button type="button" class="btn btn-sm btn-icon-soft" data-copy="{{ $asset->password }}" title="Copy"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                    @else
+                        <span class="text-muted small">—</span>
+                    @endif
+                </div>
+                <div>
+                    <small class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: .68rem; letter-spacing: .05em;">Admin Password</small>
+                    @if($asset->admin_password)
+                        <div class="d-flex align-items-center gap-2">
+                            <code class="flex-grow-1 text-truncate" data-credential data-value="{{ $asset->admin_password }}">••••••••</code>
+                            <button type="button" class="btn btn-sm btn-icon-soft" data-copy="{{ $asset->admin_password }}" title="Copy"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                    @else
+                        <span class="text-muted small">—</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body small">
+                <div class="text-muted text-uppercase fw-semibold mb-2" style="font-size: .68rem; letter-spacing: .05em;">Audit</div>
+                <div class="d-flex justify-content-between"><span class="text-muted">Modified by</span><span class="fw-semibold">{{ $asset->modified_by ?: '—' }}</span></div>
+                <div class="d-flex justify-content-between mt-1"><span class="text-muted">Last update</span><span>{{ $asset->updated_at?->format('Y-m-d H:i') ?? '—' }}</span></div>
+                <div class="d-flex justify-content-between mt-1"><span class="text-muted">Created</span><span>{{ $asset->created_at?->format('Y-m-d') ?? '—' }}</span></div>
             </div>
         </div>
 
@@ -152,61 +257,6 @@
                 @empty
                     <p class="text-muted small mb-0">No assignment history yet. It will start tracking when this PC is assigned to an employee.</p>
                 @endforelse
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card mb-3">
-            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                <span class="d-flex align-items-center gap-2"><i class="bi bi-shield-lock text-primary"></i> <strong>Credentials</strong></span>
-                <button type="button" class="btn btn-sm btn-icon-soft" data-credential-toggle title="Show / hide passwords">
-                    <i class="bi bi-eye-slash" data-credential-icon></i>
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <small class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: .68rem; letter-spacing: .05em;">Username</small>
-                    @if($asset->username)
-                        <div class="d-flex align-items-center gap-2">
-                            <code class="flex-grow-1 text-truncate" data-copy-target>{{ $asset->username }}</code>
-                            <button type="button" class="btn btn-sm btn-icon-soft" data-copy="{{ $asset->username }}" title="Copy"><i class="bi bi-clipboard"></i></button>
-                        </div>
-                    @else
-                        <span class="text-muted small">—</span>
-                    @endif
-                </div>
-                <div class="mb-3">
-                    <small class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: .68rem; letter-spacing: .05em;">Password</small>
-                    @if($asset->password)
-                        <div class="d-flex align-items-center gap-2">
-                            <code class="flex-grow-1 text-truncate" data-credential data-value="{{ $asset->password }}">••••••••</code>
-                            <button type="button" class="btn btn-sm btn-icon-soft" data-copy="{{ $asset->password }}" title="Copy"><i class="bi bi-clipboard"></i></button>
-                        </div>
-                    @else
-                        <span class="text-muted small">—</span>
-                    @endif
-                </div>
-                <div>
-                    <small class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: .68rem; letter-spacing: .05em;">Admin Password</small>
-                    @if($asset->admin_password)
-                        <div class="d-flex align-items-center gap-2">
-                            <code class="flex-grow-1 text-truncate" data-credential data-value="{{ $asset->admin_password }}">••••••••</code>
-                            <button type="button" class="btn btn-sm btn-icon-soft" data-copy="{{ $asset->admin_password }}" title="Copy"><i class="bi bi-clipboard"></i></button>
-                        </div>
-                    @else
-                        <span class="text-muted small">—</span>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-body small">
-                <div class="text-muted text-uppercase fw-semibold mb-2" style="font-size: .68rem; letter-spacing: .05em;">Audit</div>
-                <div class="d-flex justify-content-between"><span class="text-muted">Modified by</span><span class="fw-semibold">{{ $asset->modified_by ?: '—' }}</span></div>
-                <div class="d-flex justify-content-between mt-1"><span class="text-muted">Last update</span><span>{{ $asset->updated_at?->format('Y-m-d H:i') ?? '—' }}</span></div>
-                <div class="d-flex justify-content-between mt-1"><span class="text-muted">Created</span><span>{{ $asset->created_at?->format('Y-m-d') ?? '—' }}</span></div>
             </div>
         </div>
     </div>

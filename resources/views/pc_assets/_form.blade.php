@@ -140,6 +140,49 @@
     </div>
 </div>
 
+@php($softwareRows = old('software', isset($asset) ? $asset->software->toArray() : []))
+<div class="card mb-3">
+    <div class="card-header bg-transparent d-flex align-items-center gap-2">
+        <i class="bi bi-box-seam text-primary"></i><strong>Software List</strong>
+        <span class="text-muted small ms-2">Installed software, entered manually.</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-2" data-software-table>
+                <thead>
+                    <tr>
+                        <th style="width: 38%;">Software</th>
+                        <th style="width: 22%;">Version</th>
+                        <th>Notes</th>
+                        <th style="width: 42px;"></th>
+                    </tr>
+                </thead>
+                <tbody data-software-rows>
+                    @forelse($softwareRows as $i => $row)
+                        <tr data-software-row>
+                            <td><input type="text" name="software[{{ $i }}][name]" value="{{ $row['name'] ?? '' }}" class="form-control form-control-sm" placeholder="e.g. Microsoft 365"></td>
+                            <td><input type="text" name="software[{{ $i }}][version]" value="{{ $row['version'] ?? '' }}" class="form-control form-control-sm" placeholder="e.g. 2024"></td>
+                            <td><input type="text" name="software[{{ $i }}][notes]" value="{{ $row['notes'] ?? '' }}" class="form-control form-control-sm" placeholder="e.g. Vol. license"></td>
+                            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" data-software-remove title="Remove"><i class="bi bi-x-lg"></i></button></td>
+                        </tr>
+                    @empty
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-software-add><i class="bi bi-plus-lg"></i> Add software</button>
+    </div>
+</div>
+
+<template data-software-template>
+    <tr data-software-row>
+        <td><input type="text" name="software[__INDEX__][name]" class="form-control form-control-sm" placeholder="e.g. Microsoft 365"></td>
+        <td><input type="text" name="software[__INDEX__][version]" class="form-control form-control-sm" placeholder="e.g. 2024"></td>
+        <td><input type="text" name="software[__INDEX__][notes]" class="form-control form-control-sm" placeholder="e.g. Vol. license"></td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" data-software-remove title="Remove"><i class="bi bi-x-lg"></i></button></td>
+    </tr>
+</template>
+
 <div class="d-flex gap-2">
     <button class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
     <a href="{{ route('pc-assets.index') }}" class="btn btn-outline-secondary">Cancel</a>
@@ -158,5 +201,31 @@
 
         permanent.addEventListener('change', sync);
         sync();
+    })();
+
+    (function () {
+        const rows = document.querySelector('[data-software-rows]');
+        const template = document.querySelector('[data-software-template]');
+        const addBtn = document.querySelector('[data-software-add]');
+        if (!rows || !template || !addBtn) return;
+
+        let index = rows.querySelectorAll('[data-software-row]').length;
+
+        const addRow = () => {
+            const html = template.innerHTML.replace(/__INDEX__/g, index++);
+            const tr = document.createElement('tbody');
+            tr.innerHTML = html.trim();
+            rows.appendChild(tr.firstChild);
+        };
+
+        addBtn.addEventListener('click', addRow);
+
+        rows.addEventListener('click', (e) => {
+            const remove = e.target.closest('[data-software-remove]');
+            if (remove) remove.closest('[data-software-row]').remove();
+        });
+
+        // Start with one empty row when none exist yet.
+        if (index === 0) addRow();
     })();
 </script>

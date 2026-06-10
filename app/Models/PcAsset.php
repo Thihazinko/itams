@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class PcAsset extends Model
 {
@@ -30,12 +31,69 @@ class PcAsset extends Model
     ];
 
     /**
+     * The warranty's end date, derived from the purchased date plus the
+     * free-text warranty period (e.g. "3 years", "12 months", "90 days").
+     * Returns null when either input is missing or the period can't be parsed.
+     */
+    public function getWarrantyEndDateAttribute(): ?Carbon
+    {
+        if (! $this->purchased_date || blank($this->warranty_period)) {
+            return null;
+        }
+
+        if (! preg_match('/(\d+(?:\.\d+)?)\s*(year|yr|month|mo|week|wk|day)/i', $this->warranty_period, $m)) {
+            return null;
+        }
+
+        $amount = (float) $m[1];
+        $unit   = strtolower($m[2]);
+        $end    = $this->purchased_date->copy();
+
+        return match (true) {
+            str_starts_with($unit, 'y') => $end->addMonths((int) round($amount * 12)),
+            str_starts_with($unit, 'm') => $end->addMonths((int) round($amount)),
+            str_starts_with($unit, 'w') => $end->addWeeks((int) round($amount)),
+            default                     => $end->addDays((int) round($amount)),
+        };
+    }
+
+    /**
+     * The warranty status, computed from the warranty end date relative to
+     * today: "Expired", "Expiring Soon" (within 30 days), or "In Warranty".
+     * Returns "Unknown" when the end date can't be determined.
+     */
+    public function getWarrantyStatusAttribute(): string
+    {
+        $end = $this->warranty_end_date;
+
+        if (! $end) {
+            return 'Unknown';
+        }
+
+        $today = Carbon::today();
+
+        return match (true) {
+            $end->lt($today)                       => 'Expired',
+            $end->lte($today->copy()->addDays(30)) => 'Expiring Soon',
+            default                                => 'In Warranty',
+        };
+    }
+
+    /**
      * The assignment history — one row per period this PC was assigned to an
      * employee. The open row (released_at = null) is the current holder.
      */
     public function assignments(): HasMany
     {
         return $this->hasMany(PcAssetAssignment::class)->orderByDesc('assigned_at');
+    }
+
+    /**
+     * Software installed on this PC, entered manually. One row per program.
+     */
+    public function software(): HasMany
+    {
+        return $this->hasMany(PcAssetSoftware::class)->orderBy('name');
     }
 
     /**

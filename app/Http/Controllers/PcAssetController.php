@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\PcAsset;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class PcAssetController extends Controller
@@ -70,7 +71,12 @@ class PcAssetController extends Controller
         $data = $this->validateData($request);
         $data['modified_by'] = $request->user()->name;
 
-        $asset = PcAsset::create($data);
+        $asset = DB::transaction(function () use ($data, $request) {
+            $asset = PcAsset::create($data);
+            $this->syncSoftware($asset, $request);
+
+            return $asset;
+        });
 
         ActivityLogger::log(
             action: 'created',
@@ -83,7 +89,7 @@ class PcAssetController extends Controller
 
     public function show(PcAsset $pcAsset)
     {
-        $pcAsset->load('assignments');
+        $pcAsset->load('assignments', 'software');
 
         return view('pc_assets.show', ['asset' => $pcAsset]);
     }
@@ -102,7 +108,11 @@ class PcAssetController extends Controller
         if (empty($data['password'])) unset($data['password']);
 
         $original = $pcAsset->only(array_keys($data));
-        $pcAsset->update($data);
+
+        DB::transaction(function () use ($pcAsset, $data, $request) {
+            $pcAsset->update($data);
+            $this->syncSoftware($pcAsset, $request);
+        });
 
         $changes = collect($data)
             ->reject(fn ($v, $k) => ($original[$k] ?? null) == $v)
@@ -117,7 +127,7 @@ class PcAssetController extends Controller
             properties: ['changed_fields' => $changes],
         );
 
-        return redirect()->route('pc-assets.index')->with('success', 'PC Asset updated.');
+        return redirect()->route('pc-assets.show', $pcAsset)->with('success', 'PC Asset updated.');
     }
 
     public function destroy(PcAsset $pcAsset)
@@ -238,7 +248,15 @@ class PcAssetController extends Controller
             'expire_date' => 'nullable|date',
             'warranty_period' => 'nullable|string|max:255',
             'remarks' => 'nullable|string',
+            'software'           => 'nullable|array',
+            'software.*.name'    => 'nullable|string|max:255',
+            'software.*.version' => 'nullable|string|max:255',
+            'software.*.notes'   => 'nullable|string|max:255',
         ]);
+
+        // Software is persisted separately via syncSoftware(); drop it here so
+        // it isn't passed to the PcAsset mass-assignment / change tracking.
+        unset($data['software']);
 
         // A permanent license never expires — clear any date.
         $data['expire_permanent'] = (bool) ($data['expire_permanent'] ?? false);
@@ -247,5 +265,28 @@ class PcAssetController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Replace the PC's software list with the rows submitted in the form.
+     * Blank rows (no software name) are ignored.
+     */
+    private function syncSoftware(PcAsset $pcAsset, Request $request): void
+    {
+        // Software input is validated up-front in validateData().
+        $rows = collect($request->input('software', []))
+            ->filter(fn ($row) => is_array($row) && filled($row['name'] ?? null))
+            ->map(fn ($row) => [
+                'name'    => $row['name'],
+                'version' => $row['version'] ?? null,
+                'notes'   => $row['notes'] ?? null,
+            ])
+            ->values()
+            ->all();
+
+        $pcAsset->software()->delete();
+        if (! empty($rows)) {
+            $pcAsset->software()->createMany($rows);
+        }
     }
 }

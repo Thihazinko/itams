@@ -154,7 +154,13 @@
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" route:list --path=quotations)",
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:clear)",
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan\" view:cache)",
-      "Bash(/c/xampp/mysql/bin/mysql.exe -u root rrs_system -e \"SHOW COLUMNS FROM pc_assets LIKE 'department';\")"
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root rrs_system -e \"SHOW COLUMNS FROM pc_assets LIKE 'department';\")",
+      "Bash(xargs grep -l \"warranty_status\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\PcAsset.php)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\PcAssetController.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\PcAssetSoftware.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\PcAsset.php)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan migrate --force)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache 2>&1 | Select-Object -First 5)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\PcAssetController.php)"
     ]
   }
 }
