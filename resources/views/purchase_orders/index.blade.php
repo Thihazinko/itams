@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Purchase Orders')
+@section('title', 'Renewal Process')
 
 @section('content')
 @php
@@ -19,7 +19,7 @@
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Purchase Orders</h1>
+        <h1 class="page-title">Renewal Process</h1>
         <div class="page-subtitle">All renewal P.O.s issued from the Subscriptions module.</div>
     </div>
     <a href="{{ route('subscriptions.index') }}" class="quick-action">
@@ -236,7 +236,7 @@
                                     @if(request()->hasAny(['search', 'status']))
                                         Try clearing the filters or <a href="{{ route('purchase-orders.index') }}">view all</a>.
                                     @else
-                                        Click <strong>Renew with PO</strong> on any subscription to issue a P.O.
+                                        Click <strong>Renew Subscription</strong> on any subscription to issue a P.O.
                                     @endif
                                 </div>
                             </div>

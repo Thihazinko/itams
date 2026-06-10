@@ -379,7 +379,7 @@
                                     @if($activeRenewal && $activeRenewal->status === 'draft')
                                         <a href="{{ route('purchase-orders.index') }}"
                                            class="btn-icon-soft text-secondary"
-                                           title="Draft quotation — open Purchase Orders to send to 1st approver" aria-label="Open draft P.O.">
+                                           title="Draft quotation — open Renewal Process to send to 1st approver" aria-label="Open draft P.O.">
                                             <i class="bi bi-file-earmark-text"></i>
                                         </a>
                                     @elseif($activeRenewal && $activeRenewal->status === 'pending_approval')
@@ -391,7 +391,7 @@
                                     @elseif($activeRenewal && $activeRenewal->status === 'first_approved')
                                         <a href="{{ route('purchase-orders.index') }}"
                                            class="btn-icon-soft text-info"
-                                           title="1st approved — open Purchase Orders to send 2nd approver" aria-label="Open P.O. to send 2nd approver">
+                                           title="1st approved — open Renewal Process to send 2nd approver" aria-label="Open P.O. to send 2nd approver">
                                             <i class="bi bi-envelope-plus"></i>
                                         </a>
                                     @elseif($activeRenewal && $activeRenewal->status === 'pending_second_approval')
@@ -411,7 +411,7 @@
                                         </button>
                                     @elseif($sub->renewal_status !== 'Renewed' && $isAdmin)
                                         <button type="button" class="btn-icon-soft sub-renew-po text-success"
-                                                title="Renew with Purchase Order" aria-label="Renew with PO"
+                                                title="Renew Subscription" aria-label="Renew Subscription"
                                                 data-id="{{ $sub->id }}"
                                                 data-name="{{ $sub->subscription_name }}"
                                                 data-service="{{ $sub->service_type }}"
@@ -467,7 +467,7 @@
         @csrf @method('DELETE')
     </form>
 
-    {{-- Renew with Purchase Order modal --}}
+    {{-- Renew Subscription modal --}}
     <div class="modal fade" id="subRenewPoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
@@ -476,7 +476,7 @@
                     <div class="modal-header">
                         <h5 class="modal-title">
                             <i class="bi bi-file-earmark-text"></i>
-                            Renew with Purchase Order
+                            Renew Subscription
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -533,7 +533,7 @@
                                 <div class="form-text">
                                     Registered users will be required to log in; external recipients receive a signed link.
                                     A draft quotation is created here — no email is sent until you click the
-                                    <i class="bi bi-envelope"></i> icon on the Purchase Orders list.
+                                    <i class="bi bi-envelope"></i> icon on the Renewal Process list.
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -725,7 +725,7 @@
         });
     });
 
-    // Renew with PO — open modal pre-filled
+    // Renew Subscription — open modal pre-filled
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.sub-renew-po');
         if (!btn) return;

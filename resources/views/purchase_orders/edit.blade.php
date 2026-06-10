@@ -40,7 +40,7 @@
         <div class="alert alert-info small mb-4">
             <i class="bi bi-info-circle me-1"></i>
             Editing is only available while the P.O. is a draft or awaiting first approval. Saving regenerates the PDF;
-            no email is sent. Use the mail icons on the Purchase Orders list to dispatch approval requests.
+            no email is sent. Use the mail icons on the Renewal Process list to dispatch approval requests.
         </div>
 
         <form method="POST" action="{{ route('purchase-orders.update', $renewal) }}">
