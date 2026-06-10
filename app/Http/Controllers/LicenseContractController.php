@@ -130,7 +130,7 @@ class LicenseContractController extends Controller
             properties: ['changed_fields' => $changes],
         );
 
-        return redirect()->route('licenses-contracts.index')->with('success', 'License/Contract updated.');
+        return redirect()->route('licenses-contracts.show', $licenses_contract)->with('success', 'License/Contract updated.');
     }
 
     public function destroy(LicenseContract $licenses_contract)
@@ -232,6 +232,7 @@ class LicenseContractController extends Controller
             'renewal_type' => 'required|in:Yearly,Monthly,Pay as you go,One Time',
             'license_info' => 'nullable|string',
             'last_renewal_date' => 'nullable|date',
+            'start_using_date' => 'nullable|date',
             'expire_permanent' => 'boolean',
             'expire_date' => 'nullable|required_if:expire_permanent,0,false|date',
             'vendor_name' => 'nullable|string|max:255',

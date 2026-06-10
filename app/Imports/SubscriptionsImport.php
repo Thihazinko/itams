@@ -61,6 +61,7 @@ class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             'period' => $row['period'] ?? null,
             'previous_cost' => isset($row['previous_cost']) && $row['previous_cost'] !== '' ? (float) $row['previous_cost'] : null,
             'expire_date' => $this->parseDate($row['expire_date'] ?? null),
+            'start_using_date' => $this->parseDate($row['start_using_date'] ?? null),
             'renewal_cost' => isset($row['renewal_cost']) && $row['renewal_cost'] !== '' ? (float) $row['renewal_cost'] : null,
             'currency' => $row['currency'] ?? 'MMK',
             'renewal_type' => $row['renewal_type'] ?? 'Yearly',

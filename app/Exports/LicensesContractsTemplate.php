@@ -14,7 +14,7 @@ class LicensesContractsTemplate implements FromArray, WithHeadings, ShouldAutoSi
     {
         return [
             'software_name', 'status', 'renewal_type', 'license_info',
-            'last_renewal_date', 'expire_date', 'vendor_name',
+            'last_renewal_date', 'start_using_date', 'expire_date', 'vendor_name',
             'previous_cost', 'renewal_cost', 'currency', 'remarks',
         ];
     }
@@ -24,7 +24,7 @@ class LicensesContractsTemplate implements FromArray, WithHeadings, ShouldAutoSi
         return [
             [
                 'Microsoft 365 Business Standard', 'Active', 'Yearly', 'KEY-XXXX-YYYY-ZZZZ / Invoice INV-2024-001',
-                '2025-01-15', '2026-01-15', 'Microsoft',
+                '2025-01-15', '2024-02-01', '2026-01-15', 'Microsoft',
                 850000.00, 880000.00, 'MMK', 'Delete this row before importing',
             ],
         ];

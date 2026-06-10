@@ -132,6 +132,13 @@ class SubscriptionController extends Controller
         return redirect()->route('subscriptions.index')->with('success', 'Subscription created.');
     }
 
+    public function show(Subscription $subscription)
+    {
+        $subscription->load('renewals');
+
+        return view('subscriptions.show', ['subscription' => $subscription]);
+    }
+
     public function edit(Subscription $subscription)
     {
         return view('subscriptions.edit', ['subscription' => $subscription]);
@@ -157,7 +164,7 @@ class SubscriptionController extends Controller
             properties: ['changed_fields' => $changes],
         );
 
-        return redirect()->route('subscriptions.index')->with('success', 'Subscription updated.');
+        return redirect()->route('subscriptions.show', $subscription)->with('success', 'Subscription updated.');
     }
 
     public function destroy(Subscription $subscription)
@@ -262,6 +269,7 @@ class SubscriptionController extends Controller
             'period' => 'nullable|string|max:255',
             'previous_cost' => 'nullable|numeric|min:0',
             'expire_date' => 'required|date',
+            'start_using_date' => 'nullable|date',
             'renewal_cost' => 'nullable|numeric|min:0',
             'currency' => 'required|in:MMK,JPY,USD',
             'renewal_type' => 'required|in:Yearly,Monthly,Pay as you go,One Time',

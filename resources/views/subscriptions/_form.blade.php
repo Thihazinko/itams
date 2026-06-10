@@ -52,6 +52,11 @@
                 @error('expire_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-4">
+                <label class="form-label">Start Using Date</label>
+                <input type="date" name="start_using_date" value="{{ old('start_using_date', isset($subscription->start_using_date) ? $subscription->start_using_date->format('Y-m-d') : '') }}" class="form-control">
+                <small class="text-muted">When this subscription was first put to use.</small>
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Renewal Type</label>
                 <select name="renewal_type" class="form-select">
                     @foreach(['Yearly', 'Monthly', 'Pay as you go', 'One Time'] as $t)

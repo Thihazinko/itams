@@ -21,7 +21,7 @@ class SubscriptionsExport implements FromCollection, WithHeadings, WithMapping, 
     {
         return [
             'service_type', 'project_name', 'subscription_name', 'vendor_name', 'status',
-            'period', 'previous_cost', 'expire_date', 'renewal_cost', 'currency',
+            'period', 'previous_cost', 'expire_date', 'start_using_date', 'renewal_cost', 'currency',
             'renewal_type', 'renewal_status', 'remarks',
         ];
     }
@@ -37,6 +37,7 @@ class SubscriptionsExport implements FromCollection, WithHeadings, WithMapping, 
             $s->period,
             $s->previous_cost,
             optional($s->expire_date)->format('Y-m-d'),
+            optional($s->start_using_date)->format('Y-m-d'),
             $s->renewal_cost,
             $s->currency,
             $s->renewal_type,

@@ -21,7 +21,7 @@ class LicensesContractsExport implements FromCollection, WithHeadings, WithMappi
     {
         return [
             'software_name', 'status', 'renewal_type', 'license_info',
-            'last_renewal_date', 'expire_date', 'vendor_name',
+            'last_renewal_date', 'start_using_date', 'expire_date', 'vendor_name',
             'previous_cost', 'renewal_cost', 'currency', 'remarks',
         ];
     }
@@ -34,6 +34,7 @@ class LicensesContractsExport implements FromCollection, WithHeadings, WithMappi
             $item->renewal_type,
             $item->license_info,
             optional($item->last_renewal_date)->format('Y-m-d'),
+            optional($item->start_using_date)->format('Y-m-d'),
             $item->expire_permanent ? 'Permanent' : optional($item->expire_date)->format('Y-m-d'),
             $item->vendor_name,
             $item->previous_cost,

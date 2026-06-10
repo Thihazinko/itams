@@ -69,6 +69,10 @@ Route::middleware('auth')->group(function () {
     });
     Route::middleware('module:subscriptions,view')->group(function () {
         Route::get('subscriptions/renewals/{renewal}', [SubscriptionRenewalController::class, 'show'])->name('subscriptions.renewals.show');
+        // Numeric constraint so this doesn't shadow subscriptions/create, /export, /template.
+        Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show'])
+            ->whereNumber('subscription')
+            ->name('subscriptions.show');
     });
 
     // Licenses & Contracts

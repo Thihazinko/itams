@@ -45,6 +45,11 @@
                 </select>
             </div>
             <div class="col-md-4">
+                <label class="form-label">Start Using Date</label>
+                <input type="date" name="start_using_date" value="{{ old('start_using_date', isset($item->start_using_date) ? $item->start_using_date->format('Y-m-d') : '') }}" class="form-control">
+                <small class="text-muted">When this license/contract was first put to use.</small>
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Last Renewal</label>
                 <input type="date" name="last_renewal_date" value="{{ old('last_renewal_date', isset($item->last_renewal_date) ? $item->last_renewal_date->format('Y-m-d') : '') }}" class="form-control">
             </div>

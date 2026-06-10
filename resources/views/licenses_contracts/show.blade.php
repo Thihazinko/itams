@@ -81,6 +81,15 @@
                     <dt class="col-sm-4 text-muted">Renewal Type</dt>
                     <dd class="col-sm-8">{{ $item->renewal_type }}</dd>
 
+                    <dt class="col-sm-4 text-muted">Start Using Date</dt>
+                    <dd class="col-sm-8">
+                        {{ $item->start_using_date?->format('Y-m-d') ?? '—' }}
+                        @if($item->usage_duration)
+                            @php($usedLabel = (!$isPermanent && $item->expire_date && $item->expire_date->lt($today)) ? 'used' : 'in use')
+                            <span class="badge bg-info-subtle text-info-emphasis ms-1" style="font-size:.65rem;">{{ $usedLabel }} {{ $item->usage_duration }}</span>
+                        @endif
+                    </dd>
+
                     <dt class="col-sm-4 text-muted">Last Renewal</dt>
                     <dd class="col-sm-8">{{ $item->last_renewal_date?->format('Y-m-d') ?? '—' }}</dd>
 

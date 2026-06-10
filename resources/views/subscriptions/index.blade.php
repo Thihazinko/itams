@@ -278,6 +278,7 @@
                             <th>Vendor</th>
                             <th>Expires</th>
                             <th>Days</th>
+                            <th>In Use</th>
                             <th>Renewal</th>
                             <th class="text-end">Cost</th>
                             <th>Price Change</th>
@@ -341,6 +342,13 @@
                                         <span class="badge bg-{{ $daysTone }}-subtle text-{{ $daysTone }}-emphasis">
                                             {{ $days < 0 ? abs($days) . 'd overdue' : $days . 'd' }}
                                         </span>
+                                    @endif
+                                </td>
+                                <td class="text-muted small text-nowrap">
+                                    @if($sub->usage_duration)
+                                        {{ ($sub->expire_date && $sub->expire_date->lt(\Carbon\Carbon::today()) && $sub->renewal_status !== 'Renewed') ? 'used' : 'in use' }} {{ $sub->usage_duration }}
+                                    @else
+                                        —
                                     @endif
                                 </td>
                                 <td class="text-muted small">{{ $sub->renewal_type }}</td>
@@ -423,6 +431,7 @@
                                             <i class="bi bi-file-earmark-text"></i>
                                         </button>
                                     @endif
+                                    <a href="{{ route('subscriptions.show', $sub) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('subscriptions.edit', $sub) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     @if($isAdmin)
                                     <button type="button" class="btn-icon-soft text-danger sub-delete-single"
@@ -435,7 +444,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 11 : 10 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 12 : 11 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No subscriptions found</div>

@@ -267,6 +267,7 @@
                             <th>Vendor</th>
                             <th>License / Serial / Invoice</th>
                             <th>Last Renewal</th>
+                            <th>In Use</th>
                             <th>Expires</th>
                             <th>Renewal</th>
                             <th class="text-end">Cost</th>
@@ -329,6 +330,13 @@
                                     @endif
                                 </td>
                                 <td class="text-muted small text-nowrap">{{ $item->last_renewal_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="text-muted small text-nowrap">
+                                    @if($item->usage_duration)
+                                        {{ (!$isPermanent && $item->expire_date && $item->expire_date->lt($today)) ? 'used' : 'in use' }} {{ $item->usage_duration }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td class="text-nowrap">
                                     @if($isPermanent)
                                         <span class="badge bg-success-subtle text-success-emphasis">Permanent</span>
@@ -384,7 +392,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 11 : 10 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 13 : 12 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No licenses or contracts found</div>

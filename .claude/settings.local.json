@@ -160,7 +160,14 @@
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\PcAssetController.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\PcAssetSoftware.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\PcAsset.php)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan migrate --force)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache 2>&1 | Select-Object -First 5)",
-      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\PcAssetController.php)"
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\PcAssetController.php)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\LicenseContract.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\LicenseContractController.php; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan migrate --force)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\LicenseContract.php)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache 2>&1 | Select-Object -First 5)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Models\\\\Subscription.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\SubscriptionController.php; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan migrate --force; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache 2>&1 | Select-Object -First 3; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear 2>&1 | Select-Object -First 1)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache 2>&1)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear 2>&1)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\SubscriptionController.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\LicenseContractController.php)"
     ]
   }
 }
