@@ -9,32 +9,19 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Validators\Failure;
 
-class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
+class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
 {
     use Importable;
 
     public array $failures = [];
     public int $imported = 0;
+    public int $updated = 0;
     public int $skipped = 0;
-
-    /** @var array<string,true>|null Lower-cased existing serial numbers (skip duplicates when serial provided). */
-    private ?array $existingSerials = null;
-
-    private function existingSerials(): array
-    {
-        return $this->existingSerials ??= Device::query()
-            ->whereNotNull('serial_number')
-            ->where('serial_number', '!=', '')
-            ->pluck('serial_number')
-            ->mapWithKeys(fn ($sn) => [strtolower(trim((string) $sn)) => true])
-            ->all();
-    }
 
     public function model(array $row)
     {
@@ -43,15 +30,8 @@ class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithBatc
         }
 
         $serial = trim((string) ($row['serial_number'] ?? ''));
-        if ($serial !== '' && isset($this->existingSerials()[strtolower($serial)])) {
-            $this->skipped++;
-            return null;
-        }
-        if ($serial !== '') {
-            $this->existingSerials[strtolower($serial)] = true;
-        }
 
-        return new Device([
+        $attributes = [
             'item_name'         => trim((string) ($row['item_name'] ?? '')),
             'serial_number'     => $serial !== '' ? $serial : null,
             'location'          => $row['location'] ?? null,
@@ -65,7 +45,22 @@ class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithBatc
             'delivery_location' => $row['delivery_location'] ?? null,
             'remark'            => $row['remark'] ?? null,
             'modified_by'       => Auth::user()?->name ?? 'Import',
-        ]);
+        ];
+
+        // Upsert by serial number so edits to an existing device are applied.
+        // Rows without a serial can't be matched, so they always create.
+        if ($serial !== '') {
+            $existing = Device::whereRaw('LOWER(serial_number) = ?', [strtolower($serial)])->first();
+            if ($existing) {
+                $existing->fill($attributes)->save();
+                $this->updated++;
+                return null;
+            }
+        }
+
+        Device::create($attributes);
+        $this->imported++;
+        return null;
     }
 
     private function parseDate($value): ?string
@@ -94,11 +89,6 @@ class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithBatc
             'qty'       => 'nullable|integer|min:1',
             'status'    => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Device::STATUSES)],
         ];
-    }
-
-    public function batchSize(): int
-    {
-        return 200;
     }
 
     public function chunkSize(): int

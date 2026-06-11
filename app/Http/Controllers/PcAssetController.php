@@ -191,25 +191,24 @@ class PcAssetController extends Controller
         ]);
 
         $import = new PcAssetsImport();
-        $countBefore = PcAsset::count();
         try {
             Excel::import($import, $request->file('file'));
         } catch (\Throwable $e) {
             return back()->with('error', 'Import failed: ' . $e->getMessage());
         }
 
-        $imported = $import->imported = PcAsset::count() - $countBefore;
+        $imported = $import->imported;
+        $updated = $import->updated;
         $failed = count($import->failures);
-        $skipped = $import->skipped;
 
         ActivityLogger::log(
             action: 'imported',
-            description: "Imported {$imported} PC asset(s)" . ($skipped > 0 ? " ({$skipped} skipped as duplicates)" : '') . ($failed > 0 ? " ({$failed} failed)" : ''),
-            properties: ['imported' => $imported, 'skipped' => $skipped, 'failed' => $failed],
+            description: "Imported {$imported} new PC asset(s)" . ($updated > 0 ? ", updated {$updated}" : '') . ($failed > 0 ? " ({$failed} failed)" : ''),
+            properties: ['imported' => $imported, 'updated' => $updated, 'failed' => $failed],
         );
 
         if ($failed > 0) {
-            $msg = "Imported {$imported} row(s); {$failed} row(s) failed validation" . ($skipped > 0 ? "; {$skipped} duplicate row(s) skipped" : '') . '.';
+            $msg = "Imported {$imported} new row(s)" . ($updated > 0 ? "; updated {$updated} existing row(s)" : '') . "; {$failed} row(s) failed validation.";
             $details = collect($import->failures)
                 ->take(10)
                 ->map(fn ($f) => 'Row ' . ($f['row'] ?? '?') . ' (' . $f['attribute'] . '): ' . implode(', ', $f['errors']))
@@ -217,7 +216,7 @@ class PcAssetController extends Controller
             return back()->with('error', $msg . ' ' . $details);
         }
 
-        $msg = "Imported {$imported} PC asset(s) successfully" . ($skipped > 0 ? "; {$skipped} duplicate row(s) skipped" : '') . '.';
+        $msg = "Imported {$imported} new PC asset(s)" . ($updated > 0 ? "; updated {$updated} existing PC(s)" : '') . ' successfully.';
         return back()->with('success', $msg);
     }
 

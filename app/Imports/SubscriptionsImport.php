@@ -9,35 +9,19 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Validators\Failure;
 
-class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
+class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
 {
     use Importable;
 
     public array $failures = [];
     public int $imported = 0;
+    public int $updated = 0;
     public int $skipped = 0;
-
-    /** @var array<string,true>|null Lower-cased "service|project|name" keys of existing rows. */
-    private ?array $existingKeys = null;
-
-    private function makeKey(?string $service, ?string $project, ?string $name): string
-    {
-        return strtolower(trim((string) $service) . '|' . trim((string) $project) . '|' . trim((string) $name));
-    }
-
-    private function existingKeys(): array
-    {
-        return $this->existingKeys ??= Subscription::query()
-            ->get(['service_type', 'project_name', 'subscription_name'])
-            ->mapWithKeys(fn ($s) => [$this->makeKey($s->service_type, $s->project_name, $s->subscription_name) => true])
-            ->all();
-    }
 
     public function model(array $row)
     {
@@ -45,14 +29,11 @@ class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             return null;
         }
 
-        $key = $this->makeKey($row['service_type'] ?? null, $row['project_name'] ?? null, $row['subscription_name'] ?? null);
-        if (isset($this->existingKeys()[$key])) {
-            $this->skipped++;
-            return null;
-        }
-        $this->existingKeys[$key] = true;
+        $service = trim((string) ($row['service_type'] ?? ''));
+        $project = trim((string) ($row['project_name'] ?? ''));
+        $name = trim((string) ($row['subscription_name'] ?? ''));
 
-        return new Subscription([
+        $attributes = [
             'service_type' => $row['service_type'] ?? null,
             'project_name' => $row['project_name'] ?? null,
             'subscription_name' => $row['subscription_name'] ?? null,
@@ -68,7 +49,23 @@ class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             'renewal_status' => $row['renewal_status'] ?? 'Pending',
             'remarks' => $row['remarks'] ?? null,
             'modified_by' => Auth::user()?->name ?? 'Import',
-        ]);
+        ];
+
+        // Upsert by service + project + subscription name (case-insensitive) so
+        // edits to an existing subscription are applied instead of being skipped.
+        $existing = Subscription::whereRaw('LOWER(service_type) = ?', [strtolower($service)])
+            ->whereRaw("LOWER(COALESCE(project_name, '')) = ?", [strtolower($project)])
+            ->whereRaw("LOWER(COALESCE(subscription_name, '')) = ?", [strtolower($name)])
+            ->first();
+        if ($existing) {
+            $existing->fill($attributes)->save();
+            $this->updated++;
+            return null;
+        }
+
+        Subscription::create($attributes);
+        $this->imported++;
+        return null;
     }
 
     private function parseDate($value): ?string
@@ -102,11 +99,6 @@ class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             'renewal_type' => 'nullable|in:Yearly,Monthly,Pay as you go,One Time',
             'renewal_status' => 'nullable|in:Pending,Renewed,Expired,Cancelled',
         ];
-    }
-
-    public function batchSize(): int
-    {
-        return 200;
     }
 
     public function chunkSize(): int

@@ -9,30 +9,19 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Validators\Failure;
 
-class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
+class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
 {
     use Importable;
 
     public array $failures = [];
     public int $imported = 0;
+    public int $updated = 0;
     public int $skipped = 0;
-
-    /** @var array<string,true>|null Lower-cased existing computer_ids. */
-    private ?array $existingIds = null;
-
-    private function existingIds(): array
-    {
-        return $this->existingIds ??= PcAsset::query()
-            ->pluck('computer_id')
-            ->mapWithKeys(fn ($id) => [strtolower(trim((string) $id)) => true])
-            ->all();
-    }
 
     public function model(array $row)
     {
@@ -40,18 +29,14 @@ class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             return null;
         }
 
-        $permanent = strtolower(trim((string) ($row['expire_date'] ?? ''))) === 'permanent';
-
         $computerId = trim((string) ($row['computer_id'] ?? ''));
-        if ($computerId !== '' && isset($this->existingIds()[strtolower($computerId)])) {
-            $this->skipped++;
+        if ($computerId === '') {
             return null;
         }
-        if ($computerId !== '') {
-            $this->existingIds[strtolower($computerId)] = true;
-        }
 
-        return new PcAsset([
+        $permanent = strtolower(trim((string) ($row['expire_date'] ?? ''))) === 'permanent';
+
+        $attributes = [
             'computer_id' => $row['computer_id'] ?? null,
             'hostname' => $row['hostname'] ?? null,
             'employee_name' => $row['employee_name'] ?? null,
@@ -77,7 +62,20 @@ class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'warranty_period' => $row['warranty_period'] ?? null,
             'remarks' => $row['remarks'] ?? null,
             'modified_by' => Auth::user()?->name ?? 'Import',
-        ]);
+        ];
+
+        // Upsert by computer_id: update the existing PC (so edits like License Key
+        // are applied) or create a new one. Match is case-insensitive.
+        $asset = PcAsset::whereRaw('LOWER(computer_id) = ?', [strtolower($computerId)])->first();
+        if ($asset) {
+            $asset->fill($attributes)->save();
+            $this->updated++;
+        } else {
+            PcAsset::create($attributes);
+            $this->imported++;
+        }
+
+        return null;
     }
 
     private function parseDate($value): ?string
@@ -108,11 +106,6 @@ class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'department' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\PcAsset::DEPARTMENTS)],
             'location' => 'nullable|in:Office,WFH',
         ];
-    }
-
-    public function batchSize(): int
-    {
-        return 200;
     }
 
     public function chunkSize(): int

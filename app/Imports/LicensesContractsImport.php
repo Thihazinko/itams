@@ -9,35 +9,19 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Validators\Failure;
 
-class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
+class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation, WithChunkReading, SkipsEmptyRows, SkipsOnFailure, SkipsOnError
 {
     use Importable;
 
     public array $failures = [];
     public int $imported = 0;
+    public int $updated = 0;
     public int $skipped = 0;
-
-    /** @var array<string,true>|null Lower-cased "software|vendor" keys of existing rows. */
-    private ?array $existingKeys = null;
-
-    private function makeKey(?string $software, ?string $vendor): string
-    {
-        return strtolower(trim((string) $software) . '|' . trim((string) $vendor));
-    }
-
-    private function existingKeys(): array
-    {
-        return $this->existingKeys ??= LicenseContract::query()
-            ->get(['software_name', 'vendor_name'])
-            ->mapWithKeys(fn ($l) => [$this->makeKey($l->software_name, $l->vendor_name) => true])
-            ->all();
-    }
 
     public function model(array $row)
     {
@@ -45,16 +29,12 @@ class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation
             return null;
         }
 
-        $key = $this->makeKey($row['software_name'] ?? null, $row['vendor_name'] ?? null);
-        if (isset($this->existingKeys()[$key])) {
-            $this->skipped++;
-            return null;
-        }
-        $this->existingKeys[$key] = true;
+        $software = trim((string) ($row['software_name'] ?? ''));
+        $vendor = trim((string) ($row['vendor_name'] ?? ''));
 
         $permanent = strtolower(trim((string) ($row['expire_date'] ?? ''))) === 'permanent';
 
-        return new LicenseContract([
+        $attributes = [
             'software_name' => $row['software_name'] ?? null,
             'status' => $row['status'] ?? 'Active',
             'renewal_type' => $row['renewal_type'] ?? 'Yearly',
@@ -69,7 +49,22 @@ class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation
             'currency' => $row['currency'] ?? 'MMK',
             'remarks' => $row['remarks'] ?? null,
             'modified_by' => Auth::user()?->name ?? 'Import',
-        ]);
+        ];
+
+        // Upsert by software + vendor (case-insensitive) so edits to an existing
+        // record are applied instead of being skipped as a duplicate.
+        $existing = LicenseContract::whereRaw('LOWER(software_name) = ?', [strtolower($software)])
+            ->whereRaw("LOWER(COALESCE(vendor_name, '')) = ?", [strtolower($vendor)])
+            ->first();
+        if ($existing) {
+            $existing->fill($attributes)->save();
+            $this->updated++;
+            return null;
+        }
+
+        LicenseContract::create($attributes);
+        $this->imported++;
+        return null;
     }
 
     private function parseDate($value): ?string
@@ -100,11 +95,6 @@ class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation
             'expire_date' => 'required',
             'currency' => 'nullable|in:MMK,JPY,USD',
         ];
-    }
-
-    public function batchSize(): int
-    {
-        return 200;
     }
 
     public function chunkSize(): int
