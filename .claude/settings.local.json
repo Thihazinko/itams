@@ -169,7 +169,11 @@
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear 2>&1)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\SubscriptionController.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\LicenseContractController.php)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Imports\\\\PcAssetsImport.php; & C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\PcAssetController.php)",
-      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Imports\\\\PcAssetsImport.php)"
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Imports\\\\PcAssetsImport.php)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan route:list --name=pc-assets.quick-view)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)",
+      "Bash(git checkout *)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)"
     ]
   }
 }

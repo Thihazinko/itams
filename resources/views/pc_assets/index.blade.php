@@ -23,6 +23,33 @@
     $activeKpi    = request('status') === 'Active' && !request('attention');
     $freeKpi      = request('status') === 'Free'   && !request('attention');
     $attentionKpi = (bool) request('attention');
+
+    // Toggleable table columns (key => label) and which are shown by default.
+    $pcColumns = [
+        'computer_id'     => 'Computer ID',
+        'hostname'        => 'Hostname',
+        'employee'        => 'Employee',
+        'status'          => 'Status',
+        'department'      => 'Department',
+        'location'        => 'Location',
+        'brand'           => 'Brand / Model',
+        'serial'          => 'Serial Number',
+        'os'              => 'OS',
+        'license'         => 'License Key',
+        'expire'          => 'Expire Date',
+        'cpu'             => 'CPU',
+        'ram'             => 'RAM',
+        'ssd'             => 'SSD',
+        'hdd'             => 'HDD',
+        'display'         => 'Display',
+        'purchased'       => 'Purchased',
+        'warranty_period' => 'Warranty Period',
+        'warranty_status' => 'Warranty Status',
+        'remarks'         => 'Remarks',
+    ];
+    $pcDefaultCols = ['computer_id', 'hostname', 'employee', 'status', 'department', 'location', 'brand', 'os', 'purchased'];
+    // Helper: classes for a column cell — adds d-none when hidden by default.
+    $colClass = fn ($key) => 'pc-col pc-col-' . $key . (in_array($key, $pcDefaultCols) ? '' : ' d-none');
 @endphp
 
 <div class="page-header">
@@ -240,6 +267,29 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mb-2">
+        <div class="dropdown">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Show / hide columns">
+                <i class="bi bi-layout-three-columns"></i> Columns
+                <i class="bi bi-chevron-down ms-1 small opacity-75"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end p-2" style="max-height: 340px; overflow-y: auto; min-width: 220px;">
+                <li class="d-flex justify-content-between align-items-center px-2 pb-1 mb-1 border-bottom">
+                    <span class="small text-muted fw-semibold">Columns</span>
+                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" id="pcColReset" data-defaults='@json($pcDefaultCols)'>Reset</button>
+                </li>
+                @foreach($pcColumns as $key => $label)
+                    <li>
+                        <label class="dropdown-item d-flex align-items-center gap-2 px-2 rounded">
+                            <input type="checkbox" class="form-check-input mt-0 pc-col-toggle" data-col="{{ $key }}" @checked(in_array($key, $pcDefaultCols))>
+                            <span>{{ $label }}</span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+
     <form id="pcBulkForm" action="{{ route('pc-assets.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
@@ -271,15 +321,26 @@
                                 </th>
                             @endif
                             <th style="width: 60px;">No</th>
-                            <th>Computer ID</th>
-                            <th>Hostname</th>
-                            <th>Employee</th>
-                            <th>Status</th>
-                            <th>Department</th>
-                            <th>Location</th>
-                            <th>Brand / Model</th>
-                            <th>OS</th>
-                            <th>Purchased</th>
+                            <th class="{{ $colClass('computer_id') }}">Computer ID</th>
+                            <th class="{{ $colClass('hostname') }}">Hostname</th>
+                            <th class="{{ $colClass('employee') }}">Employee</th>
+                            <th class="{{ $colClass('status') }}">Status</th>
+                            <th class="{{ $colClass('department') }}">Department</th>
+                            <th class="{{ $colClass('location') }}">Location</th>
+                            <th class="{{ $colClass('brand') }}">Brand / Model</th>
+                            <th class="{{ $colClass('serial') }}">Serial Number</th>
+                            <th class="{{ $colClass('os') }}">OS</th>
+                            <th class="{{ $colClass('license') }}">License Key</th>
+                            <th class="{{ $colClass('expire') }}">Expire Date</th>
+                            <th class="{{ $colClass('cpu') }}">CPU</th>
+                            <th class="{{ $colClass('ram') }}">RAM</th>
+                            <th class="{{ $colClass('ssd') }}">SSD</th>
+                            <th class="{{ $colClass('hdd') }}">HDD</th>
+                            <th class="{{ $colClass('display') }}">Display</th>
+                            <th class="{{ $colClass('purchased') }}">Purchased</th>
+                            <th class="{{ $colClass('warranty_period') }}">Warranty Period</th>
+                            <th class="{{ $colClass('warranty_status') }}">Warranty Status</th>
+                            <th class="{{ $colClass('remarks') }}">Remarks</th>
                             <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
@@ -292,10 +353,10 @@
                                     </td>
                                 @endif
                                 <td class="text-muted small">{{ ($assets->firstItem() ?? 1) + $i }}</td>
-                                <td><a href="{{ route('pc-assets.show', $asset) }}" class="fw-semibold text-decoration-none">{{ $asset->computer_id }}</a></td>
-                                <td>{{ $asset->hostname }}</td>
-                                <td>{{ $asset->employee_name ?: '—' }}</td>
-                                <td>
+                                <td class="{{ $colClass('computer_id') }}"><a href="{{ route('pc-assets.show', $asset) }}" class="fw-semibold text-decoration-none">{{ $asset->computer_id }}</a></td>
+                                <td class="{{ $colClass('hostname') }}">{{ $asset->hostname }}</td>
+                                <td class="{{ $colClass('employee') }}">{{ $asset->employee_name ?: '—' }}</td>
+                                <td class="{{ $colClass('status') }}">
                                     @php $tone = match($asset->status) {
                                         'Active'          => 'success',
                                         'Free'            => 'info',
@@ -306,17 +367,42 @@
                                     }; @endphp
                                     <span class="badge bg-{{ $tone }}-subtle text-{{ $tone }}-emphasis">{{ $asset->status }}</span>
                                 </td>
-                                <td>{{ $asset->department ?: '—' }}</td>
-                                <td>
+                                <td class="{{ $colClass('department') }}">{{ $asset->department ?: '—' }}</td>
+                                <td class="{{ $colClass('location') }}">
                                     @if($asset->location === 'WFH')
                                         <span class="badge bg-light text-dark border"><i class="bi bi-house-door"></i> WFH</span>
                                     @else
                                         <span class="badge bg-light text-dark border"><i class="bi bi-building"></i> Office</span>
                                     @endif
                                 </td>
-                                <td>{{ trim(($asset->brand ?? '') . ' ' . ($asset->model ?? '')) ?: '—' }}</td>
-                                <td>{{ $asset->operating_system ?: '—' }}</td>
-                                <td class="text-muted small">{{ $asset->purchased_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('brand') }}">{{ trim(($asset->brand ?? '') . ' ' . ($asset->model ?? '')) ?: '—' }}</td>
+                                <td class="{{ $colClass('serial') }}">{{ $asset->serial_number ?: '—' }}</td>
+                                <td class="{{ $colClass('os') }}">{{ $asset->operating_system ?: '—' }}</td>
+                                <td class="{{ $colClass('license') }}">{{ $asset->license_key ?: '—' }}</td>
+                                <td class="{{ $colClass('expire') }} text-muted small">
+                                    @if($asset->expire_permanent)
+                                        <span class="badge bg-success-subtle text-success-emphasis">Permanent</span>
+                                    @else
+                                        {{ $asset->expire_date?->format('Y-m-d') ?? '—' }}
+                                    @endif
+                                </td>
+                                <td class="{{ $colClass('cpu') }}">{{ $asset->cpu ?: '—' }}</td>
+                                <td class="{{ $colClass('ram') }}">{{ $asset->ram ?: '—' }}</td>
+                                <td class="{{ $colClass('ssd') }}">{{ $asset->ssd ?: '—' }}</td>
+                                <td class="{{ $colClass('hdd') }}">{{ $asset->hdd ?: '—' }}</td>
+                                <td class="{{ $colClass('display') }}">{{ $asset->display ?: '—' }}</td>
+                                <td class="{{ $colClass('purchased') }} text-muted small">{{ $asset->purchased_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('warranty_period') }}">{{ $asset->warranty_period ?: '—' }}</td>
+                                <td class="{{ $colClass('warranty_status') }}">
+                                    @php $wtone = match($asset->warranty_status) {
+                                        'In Warranty'   => 'success',
+                                        'Expiring Soon' => 'warning',
+                                        'Expired'       => 'danger',
+                                        default         => 'secondary',
+                                    }; @endphp
+                                    <span class="badge bg-{{ $wtone }}-subtle text-{{ $wtone }}-emphasis">{{ $asset->warranty_status }}</span>
+                                </td>
+                                <td class="{{ $colClass('remarks') }} text-truncate" style="max-width: 220px;" title="{{ $asset->remarks }}">{{ $asset->remarks ?: '—' }}</td>
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('pc-assets.show', $asset) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('pc-assets.edit', $asset) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
@@ -338,7 +424,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 12 : 11 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 23 : 22 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No PC assets found</div>
@@ -455,6 +541,7 @@
             if (push) history.pushState({ pcContent: true }, '', url);
             initChart();
             refreshBulkToolbar();
+            restoreColumnPrefs();
         } catch (err) {
             if (overlay) overlay.classList.add('d-none');
             window.location.href = url;
@@ -562,6 +649,54 @@
         });
     });
 
+    // ---- Column show/hide chooser ----
+    const COL_STORAGE_KEY = 'pcMasterColumns';
+
+    // Apply each toggle's checked state to the matching table cells. The chooser
+    // sits inside #pcContent, so an AJAX swap re-renders it with the blade
+    // defaults — that's why swap() calls restoreColumnPrefs() (which re-reads
+    // localStorage and re-checks the boxes) rather than applyColumnPrefs() alone.
+    function applyColumnPrefs() {
+        document.querySelectorAll('.pc-col-toggle').forEach((cb) => {
+            document.querySelectorAll('.pc-col-' + cb.dataset.col).forEach((cell) => {
+                cell.classList.toggle('d-none', !cb.checked);
+            });
+        });
+    }
+
+    function saveColumnPrefs() {
+        const state = {};
+        document.querySelectorAll('.pc-col-toggle').forEach((cb) => { state[cb.dataset.col] = cb.checked; });
+        try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+
+    function restoreColumnPrefs() {
+        let state = null;
+        try { state = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || 'null'); } catch (e) { /* ignore */ }
+        if (state) {
+            document.querySelectorAll('.pc-col-toggle').forEach((cb) => {
+                if (Object.prototype.hasOwnProperty.call(state, cb.dataset.col)) cb.checked = !!state[cb.dataset.col];
+            });
+        }
+        applyColumnPrefs();
+    }
+
+    document.addEventListener('change', (e) => {
+        if (!e.target.classList.contains('pc-col-toggle')) return;
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
+    document.addEventListener('click', (e) => {
+        const reset = e.target.closest('#pcColReset');
+        if (!reset) return;
+        let defaults = [];
+        try { defaults = JSON.parse(reset.dataset.defaults || '[]'); } catch (err) { /* ignore */ }
+        document.querySelectorAll('.pc-col-toggle').forEach((cb) => { cb.checked = defaults.includes(cb.dataset.col); });
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
     // Browser back/forward
     window.addEventListener('popstate', () => {
         swap(window.location.href, { push: false });
@@ -570,6 +705,7 @@
     // Initial render
     initChart();
     refreshBulkToolbar();
+    restoreColumnPrefs();
 })();
 </script>
 
