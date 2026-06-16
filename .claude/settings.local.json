@@ -173,7 +173,8 @@
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan route:list --name=pc-assets.quick-view)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)",
       "Bash(git checkout *)",
-      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)"
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)",
+      "PowerShell(C:\\\\xampp\\\\php\\\\php.exe artisan migrate --force)"
     ]
   }
 }

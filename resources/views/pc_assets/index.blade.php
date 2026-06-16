@@ -371,6 +371,8 @@
                                 <td class="{{ $colClass('location') }}">
                                     @if($asset->location === 'WFH')
                                         <span class="badge bg-light text-dark border"><i class="bi bi-house-door"></i> WFH</span>
+                                    @elseif($asset->location === 'Other')
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt"></i> Other</span>
                                     @else
                                         <span class="badge bg-light text-dark border"><i class="bi bi-building"></i> Office</span>
                                     @endif

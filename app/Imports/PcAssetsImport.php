@@ -104,7 +104,7 @@ class PcAssetsImport implements ToModel, WithHeadingRow, WithValidation, WithChu
             'hostname' => 'required|string|max:255',
             'status' => 'nullable|in:Free,Active,Damage,Retirement,Low Performance',
             'department' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\PcAsset::DEPARTMENTS)],
-            'location' => 'nullable|in:Office,WFH',
+            'location' => 'nullable|in:Office,WFH,Other',
         ];
     }
 

@@ -46,6 +46,8 @@
                     <dd class="col-sm-8">
                         @if($asset->location === 'WFH')
                             <i class="bi bi-house-door text-muted"></i> Work From Home
+                        @elseif($asset->location === 'Other')
+                            <i class="bi bi-geo-alt text-muted"></i> Other
                         @else
                             <i class="bi bi-building text-muted"></i> Office
                         @endif

@@ -228,7 +228,7 @@ class PcAssetController extends Controller
             'employee_name' => 'nullable|string|max:255',
             'status' => 'required|in:Free,Active,Damage,Retirement,Low Performance',
             'department' => ['nullable', \Illuminate\Validation\Rule::in(PcAsset::DEPARTMENTS)],
-            'location' => 'required|in:Office,WFH',
+            'location' => 'required|in:Office,WFH,Other',
             'brand' => 'nullable|string|max:255',
             'model' => 'nullable|string|max:255',
             'serial_number' => 'nullable|string|max:255',

@@ -42,6 +42,7 @@
                 <select name="location" class="form-select">
                     <option value="Office" @selected(old('location', $asset->location ?? 'Office') === 'Office')>Office</option>
                     <option value="WFH" @selected(old('location', $asset->location ?? '') === 'WFH')>WFH</option>
+                    <option value="Other" @selected(old('location', $asset->location ?? '') === 'Other')>Other</option>
                 </select>
             </div>
             <div class="col-md-3">
