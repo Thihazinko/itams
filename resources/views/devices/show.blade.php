@@ -40,6 +40,9 @@
                     <dt class="col-sm-4 text-muted">Item Name</dt>
                     <dd class="col-sm-8">{{ $device->item_name }}</dd>
 
+                    <dt class="col-sm-4 text-muted">Category</dt>
+                    <dd class="col-sm-8">{{ $device->category ?: '—' }}</dd>
+
                     <dt class="col-sm-4 text-muted">Serial Number</dt>
                     <dd class="col-sm-8">
                         @if($device->serial_number)

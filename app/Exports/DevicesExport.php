@@ -20,7 +20,7 @@ class DevicesExport implements FromCollection, WithHeadings, WithMapping, Should
     public function headings(): array
     {
         return [
-            'item_name', 'serial_number', 'location', 'qty', 'status',
+            'item_name', 'category', 'serial_number', 'location', 'qty', 'status',
             'description', 'vendor', 'purchased_date', 'warranty',
             'delivery_date', 'delivery_location', 'remark',
         ];
@@ -30,6 +30,7 @@ class DevicesExport implements FromCollection, WithHeadings, WithMapping, Should
     {
         return [
             $d->item_name,
+            $d->category,
             $d->serial_number,
             $d->location,
             $d->qty,

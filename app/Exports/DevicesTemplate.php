@@ -13,7 +13,7 @@ class DevicesTemplate implements FromArray, WithHeadings, ShouldAutoSize, WithSt
     public function headings(): array
     {
         return [
-            'item_name', 'serial_number', 'location', 'qty', 'status',
+            'item_name', 'category', 'serial_number', 'location', 'qty', 'status',
             'description', 'vendor', 'purchased_date', 'warranty',
             'delivery_date', 'delivery_location', 'remark',
         ];
@@ -23,7 +23,7 @@ class DevicesTemplate implements FromArray, WithHeadings, ShouldAutoSize, WithSt
     {
         return [
             [
-                'Logitech MX Master 3', 'SN-SAMPLE-001', 'Server Room A', 1, 'Active',
+                'Logitech MX Master 3', 'Peripheral', 'SN-SAMPLE-001', 'Server Room A', 1, 'Active',
                 'Wireless mouse for the senior dev workstation.', 'PC World',
                 '2024-08-12', '1 year',
                 '2024-08-15', 'Office HQ - Level 3', 'Delete this row before importing',

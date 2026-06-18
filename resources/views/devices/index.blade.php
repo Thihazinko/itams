@@ -270,6 +270,7 @@
                                 </th>
                             @endif
                             <th style="width: 60px;">No</th>
+                            <th>Category</th>
                             <th>Item Name</th>
                             <th>Serial Number</th>
                             <th>Location</th>
@@ -291,6 +292,13 @@
                                     </td>
                                 @endif
                                 <td>{{ ($devices->firstItem() ?? 1) + $i }}</td>
+                                <td>
+                                    @if($device->category)
+                                        <span class="badge bg-light text-dark border">{{ $device->category }}</span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <a href="{{ route('devices.show', $device) }}" class="fw-semibold text-decoration-none">{{ $device->item_name }}</a>
                                     @if($device->description)
@@ -342,7 +350,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 12 : 11 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 13 : 12 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No devices found</div>

@@ -33,6 +33,7 @@ class DevicesImport implements ToModel, WithHeadingRow, WithValidation, WithChun
 
         $attributes = [
             'item_name'         => trim((string) ($row['item_name'] ?? '')),
+            'category'          => $row['category'] ?? null,
             'serial_number'     => $serial !== '' ? $serial : null,
             'location'          => $row['location'] ?? null,
             'qty'               => (int) ($row['qty'] ?? 1) ?: 1,

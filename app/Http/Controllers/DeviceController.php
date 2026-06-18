@@ -20,6 +20,7 @@ class DeviceController extends Controller
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('item_name', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%")
                   ->orWhere('serial_number', 'like', "%{$search}%")
                   ->orWhere('vendor', 'like', "%{$search}%")
                   ->orWhere('location', 'like', "%{$search}%")
@@ -199,6 +200,7 @@ class DeviceController extends Controller
     {
         return $request->validate([
             'item_name'         => 'required|string|max:255',
+            'category'          => 'nullable|string|max:255',
             'serial_number'     => 'nullable|string|max:255',
             'location'          => 'nullable|string|max:255',
             'qty'               => 'required|integer|min:1',

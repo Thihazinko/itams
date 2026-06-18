@@ -11,11 +11,16 @@
                 @error('item_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-4">
+                <label class="form-label">Category</label>
+                <input type="text" name="category" value="{{ old('category', $device->category ?? '') }}" class="form-control @error('category') is-invalid @enderror" placeholder="e.g. Peripheral, Networking">
+                @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Serial Number</label>
                 <input type="text" name="serial_number" value="{{ old('serial_number', $device->serial_number ?? '') }}" class="form-control @error('serial_number') is-invalid @enderror" placeholder="e.g. SN-12345">
                 @error('serial_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Qty <span class="text-danger">*</span></label>
                 <input type="number" min="1" step="1" name="qty" value="{{ old('qty', $device->qty ?? 1) }}" class="form-control @error('qty') is-invalid @enderror" required>
                 @error('qty')<div class="invalid-feedback">{{ $message }}</div>@enderror
