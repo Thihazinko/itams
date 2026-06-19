@@ -178,7 +178,9 @@
       "Bash(grep -c 'th class=\"{{ $colClass' resources/views/subscriptions/index.blade.php)",
       "Bash(grep -c 'td class=\"{{ $colClass' resources/views/subscriptions/index.blade.php)",
       "Bash(grep -c 'th class=\"{{ $colClass' resources/views/licenses_contracts/index.blade.php)",
-      "Bash(grep -c 'td class=\"{{ $colClass' resources/views/licenses_contracts/index.blade.php)"
+      "Bash(grep -c 'td class=\"{{ $colClass' resources/views/licenses_contracts/index.blade.php)",
+      "Bash(grep -oE '\\\\$[a-zA-Z_]+' resources/views/email_master/partials/account_table.blade.php)",
+      "Bash(grep -oE '\\\\$[a-zA-Z_]+' resources/views/email_master/partials/alias_table.blade.php)"
     ]
   }
 }

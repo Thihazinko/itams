@@ -27,11 +27,14 @@
         @if($user->canAccess('licenses_contracts'))
             <a href="{{ route('licenses-contracts.index') }}" class="quick-action"><i class="bi bi-file-earmark-text"></i> Licenses</a>
         @endif
+        @if($user->canAccess('email_master'))
+            <a href="{{ route('email-master.index') }}" class="quick-action"><i class="bi bi-envelope-at"></i> Email</a>
+        @endif
     </div>
 </div>
 
-<div class="row g-3 mb-3">
-    <div class="col-sm-6 col-xl-3">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-3">
+    <div class="col">
         <div class="card kpi-card kpi-blue h-100">
             <div class="card-body">
                 <div class="kpi-label">Total PC Assets</div>
@@ -41,7 +44,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col">
         <div class="card kpi-card kpi-green h-100">
             <div class="card-body">
                 <div class="kpi-label">Devices Tracked</div>
@@ -51,7 +54,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col">
         <div class="card kpi-card kpi-purple h-100">
             <div class="card-body">
                 <div class="kpi-label">Active Subscriptions</div>
@@ -61,7 +64,17 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col">
+        <div class="card kpi-card kpi-teal h-100">
+            <div class="card-body">
+                <div class="kpi-label">Email Accounts</div>
+                <div class="kpi-value">{{ number_format($stats['total_email_accounts']) }}</div>
+                <div class="kpi-foot">{{ $stats['gmail_accounts'] }} Gmail &middot; {{ $stats['email_accounts'] }} Email &middot; {{ $stats['email_aliases'] }} alias</div>
+                <i class="bi bi-envelope-at kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col">
         <div class="card kpi-card kpi-amber h-100">
             <div class="card-body">
                 <div class="kpi-label">Expiring Soon (30d)</div>

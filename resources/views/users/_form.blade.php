@@ -8,6 +8,7 @@
         'devices'            => 'bi-hdd-network',
         'subscriptions'      => 'bi-calendar-event',
         'licenses_contracts' => 'bi-file-earmark-text',
+        'email_master'       => 'bi-envelope-at',
     ];
 @endphp
 

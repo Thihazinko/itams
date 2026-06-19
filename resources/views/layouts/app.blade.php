@@ -481,6 +481,7 @@
         .kpi-green  { --kpi-accent: #10b981; }
         .kpi-amber  { --kpi-accent: #f59e0b; }
         .kpi-purple { --kpi-accent: #8b5cf6; }
+        .kpi-teal   { --kpi-accent: #14b8a6; }
         .kpi-rose   { --kpi-accent: #f43f5e; }
 
         .activity-dot {
@@ -1037,7 +1038,8 @@
         $hasAssets = $user->canAccess('pc_assets')
             || $user->canAccess('subscriptions')
             || $user->canAccess('licenses_contracts')
-            || $user->canAccess('devices');
+            || $user->canAccess('devices')
+            || $user->canAccess('email_master');
     @endphp
     <nav class="sidebar">
         <a href="{{ route('dashboard') }}" class="brand" style="text-decoration: none;">
@@ -1064,6 +1066,11 @@
             @if($user->canAccess('devices'))
             <a href="{{ route('devices.index') }}" class="{{ request()->routeIs('devices.*') ? 'active' : '' }}" title="Device Master">
                 <i class="bi bi-hdd-network"></i> Device Master
+            </a>
+            @endif
+            @if($user->canAccess('email_master'))
+            <a href="{{ route('email-master.index') }}" class="{{ request()->routeIs('email-master.*') || request()->routeIs('email-accounts.*') || request()->routeIs('email-aliases.*') ? 'active' : '' }}" title="Email Master">
+                <i class="bi bi-envelope-at"></i> Email Master
             </a>
             @endif
             @if($user->canAccess('subscriptions'))

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Device;
+use App\Models\EmailAccount;
+use App\Models\EmailAlias;
 use App\Models\LicenseContract;
 use App\Models\PcAsset;
 use App\Models\Subscription;
@@ -40,6 +42,13 @@ class DashboardController extends Controller
 
             'total_licenses'       => LicenseContract::count(),
             'active_licenses'      => LicenseContract::where('status', 'Active')->count(),
+
+            'total_email_accounts'    => EmailAccount::count(),
+            'gmail_accounts'          => EmailAccount::where('type', 'Gmail')->count(),
+            'email_accounts'          => EmailAccount::where('type', 'Email')->count(),
+            'active_email_accounts'   => EmailAccount::where('status', 'Active')->count(),
+            'inactive_email_accounts' => EmailAccount::where('status', 'Inactive')->count(),
+            'email_aliases'           => EmailAlias::count(),
 
             'expiring_subs'        => $expiringSubsCount,
             'expiring_licenses'    => $expiringLicensesCount,

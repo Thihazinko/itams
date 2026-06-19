@@ -39,6 +39,8 @@ class ActivityLog extends Model
             PcAsset::class         => 'PC Master',
             Subscription::class    => 'Subscription',
             LicenseContract::class => 'License & Contract',
+            EmailAccount::class    => 'Email Master',
+            EmailAlias::class      => 'Email Master',
             User::class            => 'User',
             MailSetting::class     => 'Mail Setting',
             default                => $this->subject_type ? class_basename($this->subject_type) : null,

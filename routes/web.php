@@ -5,6 +5,9 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\EmailAccountController;
+use App\Http\Controllers\EmailAliasController;
+use App\Http\Controllers\EmailMasterController;
 use App\Http\Controllers\LicenseContractController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PcAssetController;
@@ -102,6 +105,40 @@ Route::middleware('auth')->group(function () {
         Route::get('devices/export', [DeviceController::class, 'export'])->name('devices.export');
         Route::get('devices/template', [DeviceController::class, 'template'])->name('devices.template');
         Route::resource('devices', DeviceController::class)->only(['index', 'show']);
+    });
+
+    // Email Master (Gmail / Email accounts + Aliases)
+    Route::middleware('module:email_master,view')->group(function () {
+        Route::get('email-master', [EmailMasterController::class, 'index'])->name('email-master.index');
+
+        // Templates carry no data, so viewing is enough to download them.
+        Route::get('email-master/accounts/template', [EmailAccountController::class, 'template'])->name('email-accounts.template');
+        Route::get('email-master/aliases/template', [EmailAliasController::class, 'template'])->name('email-aliases.template');
+    });
+
+    Route::middleware('module:email_master,edit')->group(function () {
+        // Export decrypts account passwords, so require edit permission — this
+        // also matches the UI, where the Export button is gated behind canEdit.
+        Route::get('email-master/accounts/export', [EmailAccountController::class, 'export'])->name('email-accounts.export');
+        Route::get('email-master/aliases/export', [EmailAliasController::class, 'export'])->name('email-aliases.export');
+
+        // Accounts (Gmail + Email share one controller, distinguished by type)
+        Route::post('email-master/accounts/import', [EmailAccountController::class, 'import'])->name('email-accounts.import');
+        Route::delete('email-master/accounts/bulk', [EmailAccountController::class, 'bulkDestroy'])->name('email-accounts.bulk-destroy');
+        Route::get('email-master/accounts/create', [EmailAccountController::class, 'create'])->name('email-accounts.create');
+        Route::post('email-master/accounts', [EmailAccountController::class, 'store'])->name('email-accounts.store');
+        Route::get('email-master/accounts/{emailAccount}/edit', [EmailAccountController::class, 'edit'])->whereNumber('emailAccount')->name('email-accounts.edit');
+        Route::put('email-master/accounts/{emailAccount}', [EmailAccountController::class, 'update'])->whereNumber('emailAccount')->name('email-accounts.update');
+        Route::delete('email-master/accounts/{emailAccount}', [EmailAccountController::class, 'destroy'])->whereNumber('emailAccount')->name('email-accounts.destroy');
+
+        // Aliases
+        Route::post('email-master/aliases/import', [EmailAliasController::class, 'import'])->name('email-aliases.import');
+        Route::delete('email-master/aliases/bulk', [EmailAliasController::class, 'bulkDestroy'])->name('email-aliases.bulk-destroy');
+        Route::get('email-master/aliases/create', [EmailAliasController::class, 'create'])->name('email-aliases.create');
+        Route::post('email-master/aliases', [EmailAliasController::class, 'store'])->name('email-aliases.store');
+        Route::get('email-master/aliases/{emailAlias}/edit', [EmailAliasController::class, 'edit'])->whereNumber('emailAlias')->name('email-aliases.edit');
+        Route::put('email-master/aliases/{emailAlias}', [EmailAliasController::class, 'update'])->whereNumber('emailAlias')->name('email-aliases.update');
+        Route::delete('email-master/aliases/{emailAlias}', [EmailAliasController::class, 'destroy'])->whereNumber('emailAlias')->name('email-aliases.destroy');
     });
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

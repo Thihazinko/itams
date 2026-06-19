@@ -15,6 +15,7 @@ class User extends Authenticatable
         'subscriptions'      => 'Subscriptions',
         'licenses_contracts' => 'License & Contract',
         'devices'            => 'Device Management',
+        'email_master'       => 'Email Master',
     ];
 
     protected $fillable = [
@@ -31,6 +32,8 @@ class User extends Authenticatable
         'can_edit_licenses_contracts',
         'can_view_devices',
         'can_edit_devices',
+        'can_view_email_master',
+        'can_edit_email_master',
     ];
 
     protected $hidden = [
@@ -51,6 +54,8 @@ class User extends Authenticatable
             'can_edit_licenses_contracts' => 'boolean',
             'can_view_devices' => 'boolean',
             'can_edit_devices' => 'boolean',
+            'can_view_email_master' => 'boolean',
+            'can_edit_email_master' => 'boolean',
         ];
     }
 

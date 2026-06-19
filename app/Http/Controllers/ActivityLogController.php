@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\EmailAccount;
+use App\Models\EmailAlias;
 use App\Models\LicenseContract;
 use App\Models\MailSetting;
 use App\Models\PcAsset;
@@ -16,6 +18,7 @@ class ActivityLogController extends Controller
         'pc_master'        => ['label' => 'PC Master',          'subject_type' => PcAsset::class],
         'subscription'     => ['label' => 'Subscription',       'subject_type' => Subscription::class],
         'license_contract' => ['label' => 'License & Contract', 'subject_type' => LicenseContract::class],
+        'email_master'     => ['label' => 'Email Master',       'subject_types' => [EmailAccount::class, EmailAlias::class]],
         'user'             => ['label' => 'User',               'subject_type' => User::class,        'exclude_actions' => ['login', 'logout', 'login_failed']],
         'mail_setting'     => ['label' => 'Mail Setting',       'subject_type' => MailSetting::class],
         'authentication'   => ['label' => 'Authentication',     'actions' => ['login', 'logout', 'login_failed']],
@@ -34,6 +37,9 @@ class ActivityLogController extends Controller
                         if (! empty($cfg['exclude_actions'])) {
                             $q->whereNotIn('action', $cfg['exclude_actions']);
                         }
+                    }
+                    if (! empty($cfg['subject_types'])) {
+                        $q->whereIn('subject_type', $cfg['subject_types']);
                     }
                     if (! empty($cfg['actions'])) {
                         $q->orWhereIn('action', $cfg['actions']);
