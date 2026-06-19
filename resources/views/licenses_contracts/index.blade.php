@@ -16,6 +16,24 @@
     $expiringKpi  = (bool) request('expiring_soon') && !request('status') && !request('overdue');
     $pendingKpi   = request('status') === 'Pending' && !request('expiring_soon') && !request('overdue');
     $overdueKpi   = (bool) request('overdue');
+
+    // Toggleable table columns (key => label) and which are shown by default.
+    $lcColumns = [
+        'software'      => 'Software / Contract',
+        'status'        => 'Status',
+        'vendor'        => 'Vendor',
+        'license_info'  => 'License / Serial / Invoice',
+        'last_renewal'  => 'Last Renewal',
+        'inuse'         => 'In Use',
+        'expires'       => 'Expires',
+        'renewal'       => 'Renewal',
+        'cost'          => 'Cost',
+        'price_change'  => 'Price Change',
+        'start_using'   => 'Start Using',
+    ];
+    $lcDefaultCols = ['software', 'status', 'vendor', 'license_info', 'last_renewal', 'inuse', 'expires', 'renewal', 'cost', 'price_change'];
+    // Helper: classes for a column cell — adds d-none when hidden by default.
+    $colClass = fn ($key) => 'lc-col lc-col-' . $key . (in_array($key, $lcDefaultCols) ? '' : ' d-none');
 @endphp
 
 <div class="page-header">
@@ -231,6 +249,29 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mb-2">
+        <div class="dropdown">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Show / hide columns">
+                <i class="bi bi-layout-three-columns"></i> Columns
+                <i class="bi bi-chevron-down ms-1 small opacity-75"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end p-2" style="max-height: 340px; overflow-y: auto; min-width: 220px;">
+                <li class="d-flex justify-content-between align-items-center px-2 pb-1 mb-1 border-bottom">
+                    <span class="small text-muted fw-semibold">Columns</span>
+                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" id="lcColReset" data-defaults='@json($lcDefaultCols)'>Reset</button>
+                </li>
+                @foreach($lcColumns as $key => $label)
+                    <li>
+                        <label class="dropdown-item d-flex align-items-center gap-2 px-2 rounded">
+                            <input type="checkbox" class="form-check-input mt-0 lc-col-toggle" data-col="{{ $key }}" @checked(in_array($key, $lcDefaultCols))>
+                            <span>{{ $label }}</span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+
     <form id="lcBulkForm" action="{{ route('licenses-contracts.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
@@ -262,16 +303,17 @@
                                 </th>
                             @endif
                             <th style="width: 60px;">No</th>
-                            <th>Software / Contract</th>
-                            <th>Status</th>
-                            <th>Vendor</th>
-                            <th>License / Serial / Invoice</th>
-                            <th>Last Renewal</th>
-                            <th>In Use</th>
-                            <th>Expires</th>
-                            <th>Renewal</th>
-                            <th class="text-end">Cost</th>
-                            <th>Price Change</th>
+                            <th class="{{ $colClass('software') }}">Software / Contract</th>
+                            <th class="{{ $colClass('status') }}">Status</th>
+                            <th class="{{ $colClass('vendor') }}">Vendor</th>
+                            <th class="{{ $colClass('license_info') }}">License / Serial / Invoice</th>
+                            <th class="{{ $colClass('last_renewal') }}">Last Renewal</th>
+                            <th class="{{ $colClass('inuse') }}">In Use</th>
+                            <th class="{{ $colClass('expires') }}">Expires</th>
+                            <th class="{{ $colClass('renewal') }}">Renewal</th>
+                            <th class="{{ $colClass('cost') }} text-end">Cost</th>
+                            <th class="{{ $colClass('price_change') }}">Price Change</th>
+                            <th class="{{ $colClass('start_using') }}">Start Using</th>
                             <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
@@ -312,15 +354,15 @@
                                     </td>
                                 @endif
                                 <td class="text-muted small">{{ ($items->firstItem() ?? 1) + $i }}</td>
-                                <td>
+                                <td class="{{ $colClass('software') }}">
                                     <div class="fw-semibold">{{ $item->software_name }}</div>
                                     @if($item->remarks)
                                         <div class="text-muted small text-truncate" style="max-width: 280px;" title="{{ $item->remarks }}">{{ $item->remarks }}</div>
                                     @endif
                                 </td>
-                                <td><span class="badge bg-{{ $statusTone }}-subtle text-{{ $statusTone }}-emphasis">{{ $item->status }}</span></td>
-                                <td>{{ $item->vendor_name ?: '—' }}</td>
-                                <td>
+                                <td class="{{ $colClass('status') }}"><span class="badge bg-{{ $statusTone }}-subtle text-{{ $statusTone }}-emphasis">{{ $item->status }}</span></td>
+                                <td class="{{ $colClass('vendor') }}">{{ $item->vendor_name ?: '—' }}</td>
+                                <td class="{{ $colClass('license_info') }}">
                                     @if($item->license_info)
                                         <span class="d-inline-block text-truncate" style="max-width: 220px;" title="{{ $item->license_info }}">
                                             <code class="small">{{ $item->license_info }}</code>
@@ -329,15 +371,15 @@
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td class="text-muted small text-nowrap">{{ $item->last_renewal_date?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="text-muted small text-nowrap">
+                                <td class="{{ $colClass('last_renewal') }} text-muted small text-nowrap">{{ $item->last_renewal_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('inuse') }} text-muted small text-nowrap">
                                     @if($item->usage_duration)
                                         {{ (!$isPermanent && $item->expire_date && $item->expire_date->lt($today)) ? 'used' : 'in use' }} {{ $item->usage_duration }}
                                     @else
                                         —
                                     @endif
                                 </td>
-                                <td class="text-nowrap">
+                                <td class="{{ $colClass('expires') }} text-nowrap">
                                     @if($isPermanent)
                                         <span class="badge bg-success-subtle text-success-emphasis">Permanent</span>
                                     @else
@@ -349,8 +391,8 @@
                                         @endif
                                     @endif
                                 </td>
-                                <td class="text-muted small">{{ $item->renewal_type }}</td>
-                                <td class="text-end">
+                                <td class="{{ $colClass('renewal') }} text-muted small">{{ $item->renewal_type }}</td>
+                                <td class="{{ $colClass('cost') }} text-end">
                                     @if($item->renewal_cost !== null)
                                         <span class="fw-semibold">{{ number_format((float) $item->renewal_cost, 2) }}</span>
                                         <span class="text-muted small ms-1">{{ $item->currency ?? 'MMK' }}</span>
@@ -358,7 +400,7 @@
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="{{ $colClass('price_change') }}">
                                     @if($priceChange)
                                         <span class="badge bg-{{ $priceChange['tone'] }}-subtle text-{{ $priceChange['tone'] }}-emphasis d-inline-flex align-items-center gap-1"
                                               title="Previous: {{ number_format($prev, 2) }} → Renewal: {{ number_format($curr, 2) }}">
@@ -372,6 +414,7 @@
                                         <span class="text-muted small">—</span>
                                     @endif
                                 </td>
+                                <td class="{{ $colClass('start_using') }} text-nowrap small">{{ $item->start_using_date?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('licenses-contracts.show', $item) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('licenses-contracts.edit', $item) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
@@ -392,7 +435,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 13 : 12 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 14 : 13 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No licenses or contracts found</div>
@@ -457,6 +500,7 @@
             container.replaceWith(fresh);
             if (push) history.pushState({ lcContent: true }, '', url);
             refreshBulkToolbar();
+            restoreColumnPrefs();
         } catch (err) {
             if (overlay) overlay.classList.add('d-none');
             window.location.href = url;
@@ -558,11 +602,60 @@
         });
     });
 
+    // ---- Column show/hide chooser ----
+    const COL_STORAGE_KEY = 'licenseContractColumns';
+
+    // Apply each toggle's checked state to the matching table cells. The chooser
+    // sits inside #lcContent, so an AJAX swap re-renders it with the blade
+    // defaults — that's why swap() calls restoreColumnPrefs() (which re-reads
+    // localStorage and re-checks the boxes) rather than applyColumnPrefs() alone.
+    function applyColumnPrefs() {
+        document.querySelectorAll('.lc-col-toggle').forEach((cb) => {
+            document.querySelectorAll('.lc-col-' + cb.dataset.col).forEach((cell) => {
+                cell.classList.toggle('d-none', !cb.checked);
+            });
+        });
+    }
+
+    function saveColumnPrefs() {
+        const state = {};
+        document.querySelectorAll('.lc-col-toggle').forEach((cb) => { state[cb.dataset.col] = cb.checked; });
+        try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+
+    function restoreColumnPrefs() {
+        let state = null;
+        try { state = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || 'null'); } catch (e) { /* ignore */ }
+        if (state) {
+            document.querySelectorAll('.lc-col-toggle').forEach((cb) => {
+                if (Object.prototype.hasOwnProperty.call(state, cb.dataset.col)) cb.checked = !!state[cb.dataset.col];
+            });
+        }
+        applyColumnPrefs();
+    }
+
+    document.addEventListener('change', (e) => {
+        if (!e.target.classList.contains('lc-col-toggle')) return;
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
+    document.addEventListener('click', (e) => {
+        const reset = e.target.closest('#lcColReset');
+        if (!reset) return;
+        let defaults = [];
+        try { defaults = JSON.parse(reset.dataset.defaults || '[]'); } catch (err) { /* ignore */ }
+        document.querySelectorAll('.lc-col-toggle').forEach((cb) => { cb.checked = defaults.includes(cb.dataset.col); });
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
     window.addEventListener('popstate', () => {
         swap(window.location.href, { push: false });
     });
 
     refreshBulkToolbar();
+    restoreColumnPrefs();
 })();
 </script>
 

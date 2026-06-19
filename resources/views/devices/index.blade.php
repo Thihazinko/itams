@@ -24,6 +24,25 @@
     $activeKpi    = request('status') === 'Active' && !request('attention');
     $freeKpi      = request('status') === 'Free'   && !request('attention');
     $attentionKpi = (bool) request('attention');
+
+    // Toggleable table columns (key => label) and which are shown by default.
+    $deviceColumns = [
+        'category'          => 'Category',
+        'item_name'         => 'Item Name',
+        'serial'            => 'Serial Number',
+        'location'          => 'Location',
+        'qty'               => 'Qty',
+        'status'            => 'Status',
+        'vendor'            => 'Vendor',
+        'purchased'         => 'Purchased',
+        'warranty'          => 'Warranty',
+        'delivered'         => 'Delivered',
+        'delivery_location' => 'Delivery Location',
+        'remark'            => 'Remark',
+    ];
+    $deviceDefaultCols = ['category', 'item_name', 'serial', 'location', 'qty', 'status', 'vendor', 'purchased', 'warranty', 'delivered'];
+    // Helper: classes for a column cell — adds d-none when hidden by default.
+    $colClass = fn ($key) => 'device-col device-col-' . $key . (in_array($key, $deviceDefaultCols) ? '' : ' d-none');
 @endphp
 
 <div class="page-header">
@@ -239,6 +258,29 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mb-2">
+        <div class="dropdown">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Show / hide columns">
+                <i class="bi bi-layout-three-columns"></i> Columns
+                <i class="bi bi-chevron-down ms-1 small opacity-75"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end p-2" style="max-height: 340px; overflow-y: auto; min-width: 220px;">
+                <li class="d-flex justify-content-between align-items-center px-2 pb-1 mb-1 border-bottom">
+                    <span class="small text-muted fw-semibold">Columns</span>
+                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" id="deviceColReset" data-defaults='@json($deviceDefaultCols)'>Reset</button>
+                </li>
+                @foreach($deviceColumns as $key => $label)
+                    <li>
+                        <label class="dropdown-item d-flex align-items-center gap-2 px-2 rounded">
+                            <input type="checkbox" class="form-check-input mt-0 device-col-toggle" data-col="{{ $key }}" @checked(in_array($key, $deviceDefaultCols))>
+                            <span>{{ $label }}</span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+
     <form id="deviceBulkForm" action="{{ route('devices.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
@@ -270,16 +312,18 @@
                                 </th>
                             @endif
                             <th style="width: 60px;">No</th>
-                            <th>Category</th>
-                            <th>Item Name</th>
-                            <th>Serial Number</th>
-                            <th>Location</th>
-                            <th class="text-end">Qty</th>
-                            <th>Status</th>
-                            <th>Vendor</th>
-                            <th>Purchased</th>
-                            <th>Warranty</th>
-                            <th>Delivered</th>
+                            <th class="{{ $colClass('category') }}">Category</th>
+                            <th class="{{ $colClass('item_name') }}">Item Name</th>
+                            <th class="{{ $colClass('serial') }}">Serial Number</th>
+                            <th class="{{ $colClass('location') }}">Location</th>
+                            <th class="{{ $colClass('qty') }} text-end">Qty</th>
+                            <th class="{{ $colClass('status') }}">Status</th>
+                            <th class="{{ $colClass('vendor') }}">Vendor</th>
+                            <th class="{{ $colClass('purchased') }}">Purchased</th>
+                            <th class="{{ $colClass('warranty') }}">Warranty</th>
+                            <th class="{{ $colClass('delivered') }}">Delivered</th>
+                            <th class="{{ $colClass('delivery_location') }}">Delivery Location</th>
+                            <th class="{{ $colClass('remark') }}">Remark</th>
                             <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
@@ -292,29 +336,29 @@
                                     </td>
                                 @endif
                                 <td>{{ ($devices->firstItem() ?? 1) + $i }}</td>
-                                <td>
+                                <td class="{{ $colClass('category') }}">
                                     @if($device->category)
                                         <span class="badge bg-light text-dark border">{{ $device->category }}</span>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="{{ $colClass('item_name') }}">
                                     <a href="{{ route('devices.show', $device) }}" class="fw-semibold text-decoration-none">{{ $device->item_name }}</a>
                                     @if($device->description)
                                         <div class="text-muted small text-truncate" style="max-width: 280px;" title="{{ $device->description }}">{{ $device->description }}</div>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="{{ $colClass('serial') }}">
                                     @if($device->serial_number)
                                         <code class="small">{{ $device->serial_number }}</code>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>{{ $device->location ?: '—' }}</td>
-                                <td class="text-end fw-semibold">{{ $device->qty }}</td>
-                                <td>
+                                <td class="{{ $colClass('location') }}">{{ $device->location ?: '—' }}</td>
+                                <td class="{{ $colClass('qty') }} text-end fw-semibold">{{ $device->qty }}</td>
+                                <td class="{{ $colClass('status') }}">
                                     @php $tone = match($device->status) {
                                         'Active'     => 'success',
                                         'Free'       => 'info',
@@ -325,10 +369,12 @@
                                     }; @endphp
                                     <span class="badge bg-{{ $tone }}-subtle text-{{ $tone }}-emphasis">{{ $device->status }}</span>
                                 </td>
-                                <td>{{ $device->vendor ?: '—' }}</td>
-                                <td class="text-muted small">{{ $device->purchased_date?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="text-muted small">{{ $device->warranty ?: '—' }}</td>
-                                <td class="text-muted small">{{ $device->delivery_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('vendor') }}">{{ $device->vendor ?: '—' }}</td>
+                                <td class="{{ $colClass('purchased') }} text-muted small">{{ $device->purchased_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('warranty') }} text-muted small">{{ $device->warranty ?: '—' }}</td>
+                                <td class="{{ $colClass('delivered') }} text-muted small">{{ $device->delivery_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('delivery_location') }}">{{ $device->delivery_location ?: '—' }}</td>
+                                <td class="{{ $colClass('remark') }} text-truncate" style="max-width: 220px;" title="{{ $device->remark }}">{{ $device->remark ?: '—' }}</td>
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('devices.show', $device) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('devices.edit', $device) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
@@ -350,7 +396,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 13 : 12 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 15 : 14 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No devices found</div>
@@ -467,6 +513,7 @@
             if (push) history.pushState({ deviceContent: true }, '', url);
             initChart();
             refreshBulkToolbar();
+            restoreColumnPrefs();
         } catch (err) {
             if (overlay) overlay.classList.add('d-none');
             window.location.href = url;
@@ -569,12 +616,61 @@
         });
     });
 
+    // ---- Column show/hide chooser ----
+    const COL_STORAGE_KEY = 'deviceMasterColumns';
+
+    // Apply each toggle's checked state to the matching table cells. The chooser
+    // sits inside #deviceContent, so an AJAX swap re-renders it with the blade
+    // defaults — that's why swap() calls restoreColumnPrefs() (which re-reads
+    // localStorage and re-checks the boxes) rather than applyColumnPrefs() alone.
+    function applyColumnPrefs() {
+        document.querySelectorAll('.device-col-toggle').forEach((cb) => {
+            document.querySelectorAll('.device-col-' + cb.dataset.col).forEach((cell) => {
+                cell.classList.toggle('d-none', !cb.checked);
+            });
+        });
+    }
+
+    function saveColumnPrefs() {
+        const state = {};
+        document.querySelectorAll('.device-col-toggle').forEach((cb) => { state[cb.dataset.col] = cb.checked; });
+        try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+
+    function restoreColumnPrefs() {
+        let state = null;
+        try { state = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || 'null'); } catch (e) { /* ignore */ }
+        if (state) {
+            document.querySelectorAll('.device-col-toggle').forEach((cb) => {
+                if (Object.prototype.hasOwnProperty.call(state, cb.dataset.col)) cb.checked = !!state[cb.dataset.col];
+            });
+        }
+        applyColumnPrefs();
+    }
+
+    document.addEventListener('change', (e) => {
+        if (!e.target.classList.contains('device-col-toggle')) return;
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
+    document.addEventListener('click', (e) => {
+        const reset = e.target.closest('#deviceColReset');
+        if (!reset) return;
+        let defaults = [];
+        try { defaults = JSON.parse(reset.dataset.defaults || '[]'); } catch (err) { /* ignore */ }
+        document.querySelectorAll('.device-col-toggle').forEach((cb) => { cb.checked = defaults.includes(cb.dataset.col); });
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
     window.addEventListener('popstate', () => {
         swap(window.location.href, { push: false });
     });
 
     initChart();
     refreshBulkToolbar();
+    restoreColumnPrefs();
 })();
 </script>
 

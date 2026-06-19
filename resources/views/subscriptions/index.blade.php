@@ -11,6 +11,26 @@
     $kpiExpiring = (int) ($kpis['expiring'] ?? 0);
     $kpiPending  = (int) ($kpis['pending']  ?? 0);
     $kpiExpired  = (int) ($kpis['expired']  ?? 0);
+
+    // Toggleable table columns (key => label) and which are shown by default.
+    $subColumns = [
+        'service'        => 'Service / Name',
+        'vendor'         => 'Vendor',
+        'expires'        => 'Expires',
+        'days'           => 'Days',
+        'inuse'          => 'In Use',
+        'renewal'        => 'Renewal',
+        'cost'           => 'Cost',
+        'price_change'   => 'Price Change',
+        'renewal_status' => 'Renewal Status',
+        'period'         => 'Period',
+        'start_using'    => 'Start Using',
+        'reminder'       => 'Reminder Date',
+        'remarks'        => 'Remarks',
+    ];
+    $subDefaultCols = ['service', 'vendor', 'expires', 'days', 'inuse', 'renewal', 'cost', 'price_change', 'renewal_status'];
+    // Helper: classes for a column cell — adds d-none when hidden by default.
+    $colClass = fn ($key) => 'sub-col sub-col-' . $key . (in_array($key, $subDefaultCols) ? '' : ' d-none');
 @endphp
 
 <div class="page-header">
@@ -243,6 +263,29 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mb-2">
+        <div class="dropdown">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Show / hide columns">
+                <i class="bi bi-layout-three-columns"></i> Columns
+                <i class="bi bi-chevron-down ms-1 small opacity-75"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end p-2" style="max-height: 340px; overflow-y: auto; min-width: 220px;">
+                <li class="d-flex justify-content-between align-items-center px-2 pb-1 mb-1 border-bottom">
+                    <span class="small text-muted fw-semibold">Columns</span>
+                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" id="subColReset" data-defaults='@json($subDefaultCols)'>Reset</button>
+                </li>
+                @foreach($subColumns as $key => $label)
+                    <li>
+                        <label class="dropdown-item d-flex align-items-center gap-2 px-2 rounded">
+                            <input type="checkbox" class="form-check-input mt-0 sub-col-toggle" data-col="{{ $key }}" @checked(in_array($key, $subDefaultCols))>
+                            <span>{{ $label }}</span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+
     <form id="subBulkForm" action="{{ route('subscriptions.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
@@ -274,15 +317,19 @@
                                 </th>
                             @endif
                             <th style="width: 60px;">No</th>
-                            <th>Service / Name</th>
-                            <th>Vendor</th>
-                            <th>Expires</th>
-                            <th>Days</th>
-                            <th>In Use</th>
-                            <th>Renewal</th>
-                            <th class="text-end">Cost</th>
-                            <th>Price Change</th>
-                            <th>Renewal Status</th>
+                            <th class="{{ $colClass('service') }}">Service / Name</th>
+                            <th class="{{ $colClass('vendor') }}">Vendor</th>
+                            <th class="{{ $colClass('expires') }}">Expires</th>
+                            <th class="{{ $colClass('days') }}">Days</th>
+                            <th class="{{ $colClass('inuse') }}">In Use</th>
+                            <th class="{{ $colClass('renewal') }}">Renewal</th>
+                            <th class="{{ $colClass('cost') }} text-end">Cost</th>
+                            <th class="{{ $colClass('price_change') }}">Price Change</th>
+                            <th class="{{ $colClass('renewal_status') }}">Renewal Status</th>
+                            <th class="{{ $colClass('period') }}">Period</th>
+                            <th class="{{ $colClass('start_using') }}">Start Using</th>
+                            <th class="{{ $colClass('reminder') }}">Reminder Date</th>
+                            <th class="{{ $colClass('remarks') }}">Remarks</th>
                             <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
@@ -323,7 +370,7 @@
                                     </td>
                                 @endif
                                 <td class="text-muted small">{{ ($subscriptions->firstItem() ?? 1) + $i }}</td>
-                                <td>
+                                <td class="{{ $colClass('service') }}">
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="badge bg-info-subtle text-info-emphasis">{{ $sub->service_type }}</span>
                                         @if($sub->status !== 'Active')
@@ -333,9 +380,9 @@
                                     <div class="fw-semibold mt-1">{{ $sub->subscription_name }}</div>
                                     <div class="text-muted small">{{ $sub->project_name }}</div>
                                 </td>
-                                <td>{{ $sub->vendor_name ?: '—' }}</td>
-                                <td class="text-nowrap small">{{ $sub->expire_date->format('Y-m-d') }}</td>
-                                <td>
+                                <td class="{{ $colClass('vendor') }}">{{ $sub->vendor_name ?: '—' }}</td>
+                                <td class="{{ $colClass('expires') }} text-nowrap small">{{ $sub->expire_date->format('Y-m-d') }}</td>
+                                <td class="{{ $colClass('days') }}">
                                     @if($sub->renewal_status === 'Renewed')
                                         <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check2"></i> renewed</span>
                                     @else
@@ -344,15 +391,15 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="text-muted small text-nowrap">
+                                <td class="{{ $colClass('inuse') }} text-muted small text-nowrap">
                                     @if($sub->usage_duration)
                                         {{ ($sub->expire_date && $sub->expire_date->lt(\Carbon\Carbon::today()) && $sub->renewal_status !== 'Renewed') ? 'used' : 'in use' }} {{ $sub->usage_duration }}
                                     @else
                                         —
                                     @endif
                                 </td>
-                                <td class="text-muted small">{{ $sub->renewal_type }}</td>
-                                <td class="text-end">
+                                <td class="{{ $colClass('renewal') }} text-muted small">{{ $sub->renewal_type }}</td>
+                                <td class="{{ $colClass('cost') }} text-end">
                                     @if($sub->renewal_cost !== null)
                                         <span class="fw-semibold">{{ number_format((float) $sub->renewal_cost, 2) }}</span>
                                         <span class="text-muted small ms-1">{{ $sub->currency ?? 'MMK' }}</span>
@@ -360,7 +407,7 @@
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="{{ $colClass('price_change') }}">
                                     @if($priceChange)
                                         <span class="badge bg-{{ $priceChange['tone'] }}-subtle text-{{ $priceChange['tone'] }}-emphasis d-inline-flex align-items-center gap-1"
                                               title="Previous: {{ number_format($prev, 2) }} → Renewal: {{ number_format($curr, 2) }}">
@@ -374,7 +421,11 @@
                                         <span class="text-muted small">—</span>
                                     @endif
                                 </td>
-                                <td><span class="badge bg-{{ $rsBadge }}-subtle text-{{ $rsBadge }}-emphasis">{{ $sub->renewal_status }}</span></td>
+                                <td class="{{ $colClass('renewal_status') }}"><span class="badge bg-{{ $rsBadge }}-subtle text-{{ $rsBadge }}-emphasis">{{ $sub->renewal_status }}</span></td>
+                                <td class="{{ $colClass('period') }} text-muted small">{{ $sub->period ?: '—' }}</td>
+                                <td class="{{ $colClass('start_using') }} text-nowrap small">{{ $sub->start_using_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('reminder') }} text-nowrap small">{{ $sub->reminder_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="{{ $colClass('remarks') }} text-truncate" style="max-width: 220px;" title="{{ $sub->remarks }}">{{ $sub->remarks ?: '—' }}</td>
                                 <td class="text-end text-nowrap pe-3">
                                     @php
                                         $subParts = [];
@@ -444,7 +495,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 12 : 11 }}" class="text-center py-5">
+                                <td colspan="{{ $isAdmin ? 16 : 15 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No subscriptions found</div>
@@ -633,6 +684,7 @@
             container.replaceWith(fresh);
             if (push) history.pushState({ subContent: true }, '', url);
             refreshBulkToolbar();
+            restoreColumnPrefs();
         } catch (err) {
             if (overlay) overlay.classList.add('d-none');
             window.location.href = url;
@@ -811,11 +863,60 @@
         });
     });
 
+    // ---- Column show/hide chooser ----
+    const COL_STORAGE_KEY = 'subscriptionColumns';
+
+    // Apply each toggle's checked state to the matching table cells. The chooser
+    // sits inside #subContent, so an AJAX swap re-renders it with the blade
+    // defaults — that's why swap() calls restoreColumnPrefs() (which re-reads
+    // localStorage and re-checks the boxes) rather than applyColumnPrefs() alone.
+    function applyColumnPrefs() {
+        document.querySelectorAll('.sub-col-toggle').forEach((cb) => {
+            document.querySelectorAll('.sub-col-' + cb.dataset.col).forEach((cell) => {
+                cell.classList.toggle('d-none', !cb.checked);
+            });
+        });
+    }
+
+    function saveColumnPrefs() {
+        const state = {};
+        document.querySelectorAll('.sub-col-toggle').forEach((cb) => { state[cb.dataset.col] = cb.checked; });
+        try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+
+    function restoreColumnPrefs() {
+        let state = null;
+        try { state = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || 'null'); } catch (e) { /* ignore */ }
+        if (state) {
+            document.querySelectorAll('.sub-col-toggle').forEach((cb) => {
+                if (Object.prototype.hasOwnProperty.call(state, cb.dataset.col)) cb.checked = !!state[cb.dataset.col];
+            });
+        }
+        applyColumnPrefs();
+    }
+
+    document.addEventListener('change', (e) => {
+        if (!e.target.classList.contains('sub-col-toggle')) return;
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
+    document.addEventListener('click', (e) => {
+        const reset = e.target.closest('#subColReset');
+        if (!reset) return;
+        let defaults = [];
+        try { defaults = JSON.parse(reset.dataset.defaults || '[]'); } catch (err) { /* ignore */ }
+        document.querySelectorAll('.sub-col-toggle').forEach((cb) => { cb.checked = defaults.includes(cb.dataset.col); });
+        applyColumnPrefs();
+        saveColumnPrefs();
+    });
+
     window.addEventListener('popstate', () => {
         swap(window.location.href, { push: false });
     });
 
     refreshBulkToolbar();
+    restoreColumnPrefs();
 })();
 </script>
 

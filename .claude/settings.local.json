@@ -174,7 +174,11 @@
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)",
       "Bash(git checkout *)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache)",
-      "PowerShell(C:\\\\xampp\\\\php\\\\php.exe artisan migrate --force)"
+      "PowerShell(C:\\\\xampp\\\\php\\\\php.exe artisan migrate --force)",
+      "Bash(grep -c 'th class=\"{{ $colClass' resources/views/subscriptions/index.blade.php)",
+      "Bash(grep -c 'td class=\"{{ $colClass' resources/views/subscriptions/index.blade.php)",
+      "Bash(grep -c 'th class=\"{{ $colClass' resources/views/licenses_contracts/index.blade.php)",
+      "Bash(grep -c 'td class=\"{{ $colClass' resources/views/licenses_contracts/index.blade.php)"
     ]
   }
 }
