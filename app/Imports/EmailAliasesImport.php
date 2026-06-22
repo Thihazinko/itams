@@ -20,6 +20,10 @@ class EmailAliasesImport implements ToModel, WithHeadingRow, WithValidation, Wit
 
     public array $failures = [];
     public int $imported = 0;
+    public int $skipped = 0;
+
+    /** Lower-cased main_email values already handled, to skip duplicates within the same file. */
+    private array $seenMain = [];
 
     public function model(array $row)
     {
@@ -27,8 +31,20 @@ class EmailAliasesImport implements ToModel, WithHeadingRow, WithValidation, Wit
             return null;
         }
 
+        $mainEmail = trim((string) ($row['main_email'] ?? ''));
+        $mainKey = strtolower($mainEmail);
+
+        // Skip a main email that's already been imported in this file or already
+        // exists in the database, instead of creating a duplicate alias.
+        if ($mainKey !== '' && (isset($this->seenMain[$mainKey])
+            || EmailAlias::whereRaw('LOWER(main_email) = ?', [$mainKey])->exists())) {
+            $this->skipped++;
+            return null;
+        }
+        $this->seenMain[$mainKey] = true;
+
         $alias = EmailAlias::create([
-            'main_email'  => trim((string) ($row['main_email'] ?? '')),
+            'main_email'  => $mainEmail,
             'remark'      => $row['remark'] ?? null,
             'modified_by' => Auth::user()?->name ?? 'Import',
         ]);

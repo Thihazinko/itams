@@ -8,6 +8,7 @@ use App\Imports\EmailAliasesImport;
 use App\Models\EmailAlias;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class EmailAliasController extends Controller
@@ -49,7 +50,7 @@ class EmailAliasController extends Controller
 
     public function update(Request $request, EmailAlias $emailAlias)
     {
-        $data = $this->validateData($request);
+        $data = $this->validateData($request, $emailAlias);
 
         $emailAlias->update([
             'main_email'  => $data['main_email'],
@@ -144,16 +145,21 @@ class EmailAliasController extends Controller
         }
 
         $imported = $import->imported;
+        $skipped = $import->skipped;
         $failed = count($import->failures);
 
         ActivityLogger::log(
             action: 'imported',
-            description: "Imported {$imported} alias(es)" . ($failed > 0 ? " ({$failed} failed)" : ''),
-            properties: ['imported' => $imported, 'failed' => $failed],
+            description: "Imported {$imported} alias(es)"
+                . ($skipped > 0 ? " ({$skipped} duplicate(s) skipped)" : '')
+                . ($failed > 0 ? " ({$failed} failed)" : ''),
+            properties: ['imported' => $imported, 'skipped' => $skipped, 'failed' => $failed],
         );
 
+        $skippedNote = $skipped > 0 ? " {$skipped} duplicate(s) skipped." : '';
+
         if ($failed > 0) {
-            $msg = "Imported {$imported} new row(s); {$failed} row(s) failed validation.";
+            $msg = "Imported {$imported} new row(s); {$failed} row(s) failed validation.{$skippedNote}";
             $details = collect($import->failures)
                 ->take(10)
                 ->map(fn ($f) => 'Row ' . ($f['row'] ?? '?') . ' (' . $f['attribute'] . '): ' . implode(', ', $f['errors']))
@@ -161,7 +167,7 @@ class EmailAliasController extends Controller
             return back()->with('error', $msg . ' ' . $details);
         }
 
-        return back()->with('success', "Imported {$imported} alias(es) successfully.");
+        return back()->with('success', "Imported {$imported} alias(es) successfully.{$skippedNote}");
     }
 
     /**
@@ -181,13 +187,21 @@ class EmailAliasController extends Controller
         }
     }
 
-    private function validateData(Request $request): array
+    private function validateData(Request $request, ?EmailAlias $ignore = null): array
     {
+        // main_email is the unique identifier for an alias, matching the import's dedup.
+        $mainUnique = Rule::unique('email_aliases', 'main_email');
+        if ($ignore !== null) {
+            $mainUnique->ignore($ignore->id);
+        }
+
         return $request->validate([
-            'main_email' => 'required|string|max:255',
+            'main_email' => ['required', 'string', 'max:255', $mainUnique],
             'remark'     => 'nullable|string',
             'members'    => 'nullable|array',
             'members.*'  => 'nullable|string|max:255',
+        ], [
+            'main_email.unique' => 'This main email already exists.',
         ]);
     }
 }

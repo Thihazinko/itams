@@ -20,6 +20,10 @@ class EmailAccountsImport implements ToModel, WithHeadingRow, WithValidation, Wi
 
     public array $failures = [];
     public int $imported = 0;
+    public int $skipped = 0;
+
+    /** Lower-cased email addresses already handled, to skip duplicates within the same file. */
+    private array $seenAddress = [];
 
     public function __construct(private string $defaultType = 'Email')
     {
@@ -41,12 +45,24 @@ class EmailAccountsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             $status = 'Active';
         }
 
+        $address = trim((string) ($row['address'] ?? ''));
+        $addressKey = strtolower($address);
+
+        // Skip an email address that's already been imported in this file or already
+        // exists in the database, instead of creating a duplicate account.
+        if ($addressKey !== '' && (isset($this->seenAddress[$addressKey])
+            || EmailAccount::whereRaw('LOWER(address) = ?', [$addressKey])->exists())) {
+            $this->skipped++;
+            return null;
+        }
+        $this->seenAddress[$addressKey] = true;
+
         EmailAccount::create([
             'type'        => $type,
             'status'      => $status,
             'name'        => trim((string) ($row['name'] ?? '')),
             'department'  => $row['department'] ?? null,
-            'address'     => trim((string) ($row['address'] ?? '')),
+            'address'     => $address,
             'username'    => $row['username'] ?? null,
             'password'    => isset($row['password']) && $row['password'] !== '' ? (string) $row['password'] : null,
             'remark'      => $row['remark'] ?? null,

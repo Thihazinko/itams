@@ -48,7 +48,7 @@ class EmailAccountController extends Controller
 
     public function update(Request $request, EmailAccount $emailAccount)
     {
-        $data = $this->validateData($request);
+        $data = $this->validateData($request, $emailAccount);
         $data['modified_by'] = $request->user()->name;
 
         $emailAccount->update($data);
@@ -145,16 +145,21 @@ class EmailAccountController extends Controller
         }
 
         $imported = $import->imported;
+        $skipped = $import->skipped;
         $failed = count($import->failures);
 
         ActivityLogger::log(
             action: 'imported',
-            description: "Imported {$imported} email account(s)" . ($failed > 0 ? " ({$failed} failed)" : ''),
-            properties: ['type' => $defaultType, 'imported' => $imported, 'failed' => $failed],
+            description: "Imported {$imported} email account(s)"
+                . ($skipped > 0 ? " ({$skipped} duplicate(s) skipped)" : '')
+                . ($failed > 0 ? " ({$failed} failed)" : ''),
+            properties: ['type' => $defaultType, 'imported' => $imported, 'skipped' => $skipped, 'failed' => $failed],
         );
 
+        $skippedNote = $skipped > 0 ? " {$skipped} duplicate(s) skipped." : '';
+
         if ($failed > 0) {
-            $msg = "Imported {$imported} new row(s); {$failed} row(s) failed validation.";
+            $msg = "Imported {$imported} new row(s); {$failed} row(s) failed validation.{$skippedNote}";
             $details = collect($import->failures)
                 ->take(10)
                 ->map(fn ($f) => 'Row ' . ($f['row'] ?? '?') . ' (' . $f['attribute'] . '): ' . implode(', ', $f['errors']))
@@ -162,7 +167,7 @@ class EmailAccountController extends Controller
             return back()->with('error', $msg . ' ' . $details);
         }
 
-        return back()->with('success', "Imported {$imported} account(s) successfully.");
+        return back()->with('success', "Imported {$imported} account(s) successfully.{$skippedNote}");
     }
 
     private function tabFor(string $type): string
@@ -170,17 +175,26 @@ class EmailAccountController extends Controller
         return $type === 'Gmail' ? 'gmail' : 'email';
     }
 
-    private function validateData(Request $request): array
+    private function validateData(Request $request, ?EmailAccount $ignore = null): array
     {
+        // Address is the unique identifier for an account. MySQL's default
+        // case-insensitive collation makes this match the import's LOWER() dedup.
+        $addressUnique = Rule::unique('email_accounts', 'address');
+        if ($ignore !== null) {
+            $addressUnique->ignore($ignore->id);
+        }
+
         return $request->validate([
             'type'       => ['required', Rule::in(EmailAccount::TYPES)],
             'status'     => ['required', Rule::in(EmailAccount::STATUSES)],
             'name'       => 'required|string|max:255',
             'department' => 'nullable|string|max:255',
-            'address'    => 'required|string|max:255',
+            'address'    => ['required', 'string', 'max:255', $addressUnique],
             'username'   => 'nullable|string|max:255',
             'password'   => 'nullable|string|max:255',
             'remark'     => 'nullable|string',
+        ], [
+            'address.unique' => 'This email address already exists.',
         ]);
     }
 }

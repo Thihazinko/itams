@@ -29,8 +29,8 @@
                             <th style="width: 38px;"><input type="checkbox" id="emSelectAll" class="form-check-input" title="Select all on page"></th>
                         @endif
                         <th style="width: 56px;">No</th>
-                        <th>Main Email</th>
-                        <th>Mailing Addresses</th>
+                        <th style="min-width: 220px;">Main Email</th>
+                        <th style="min-width: 420px; width: 55%;">Mailing Addresses</th>
                         <th>Remark</th>
                         <th class="text-end pe-3">Actions</th>
                     </tr>
