@@ -3,18 +3,19 @@
 namespace App\Exports;
 
 use App\Models\PcAsset;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class PcAssetsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class PcAssetsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithChunkReading
 {
-    public function collection()
+    public function query(): Builder
     {
-        return PcAsset::orderBy('computer_id')->get();
+        return PcAsset::query()->orderBy('computer_id');
     }
 
     public function headings(): array
@@ -54,6 +55,12 @@ class PcAssetsExport implements FromCollection, WithHeadings, WithMapping, Shoul
             $asset->warranty_period,
             $asset->remarks,
         ];
+    }
+
+    // Stream rows in batches instead of loading the whole table into memory.
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function styles(Worksheet $sheet)

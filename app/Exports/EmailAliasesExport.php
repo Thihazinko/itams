@@ -3,18 +3,19 @@
 namespace App\Exports;
 
 use App\Models\EmailAlias;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class EmailAliasesExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class EmailAliasesExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithChunkReading
 {
-    public function collection()
+    public function query(): Builder
     {
-        return EmailAlias::with('members')->orderBy('id')->get();
+        return EmailAlias::query()->with('members')->orderBy('id');
     }
 
     public function headings(): array
@@ -29,6 +30,12 @@ class EmailAliasesExport implements FromCollection, WithHeadings, WithMapping, S
             $alias->members->pluck('address')->implode(', '),
             $alias->remark,
         ];
+    }
+
+    // Stream rows in batches instead of loading the whole table into memory.
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function styles(Worksheet $sheet)

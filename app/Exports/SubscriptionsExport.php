@@ -3,18 +3,19 @@
 namespace App\Exports;
 
 use App\Models\Subscription;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SubscriptionsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class SubscriptionsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithChunkReading
 {
-    public function collection()
+    public function query(): Builder
     {
-        return Subscription::orderBy('expire_date')->get();
+        return Subscription::query()->orderBy('expire_date');
     }
 
     public function headings(): array
@@ -44,6 +45,12 @@ class SubscriptionsExport implements FromCollection, WithHeadings, WithMapping, 
             $s->renewal_status,
             $s->remarks,
         ];
+    }
+
+    // Stream rows in batches instead of loading the whole table into memory.
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function styles(Worksheet $sheet)
