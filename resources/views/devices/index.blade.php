@@ -74,6 +74,8 @@
     </div>
 </div>
 
+@include('devices.partials.tabs')
+
 @if($canEdit)
 <div class="modal fade" id="importDeviceModal" tabindex="-1">
     <div class="modal-dialog">

@@ -1064,7 +1064,7 @@
             </a>
             @endif
             @if($user->canAccess('devices'))
-            <a href="{{ route('devices.index') }}" class="{{ request()->routeIs('devices.*') ? 'active' : '' }}" title="Device Master">
+            <a href="{{ route('devices.index') }}" class="{{ request()->routeIs('devices.*') || request()->routeIs('device-repair-logs.*') ? 'active' : '' }}" title="Device Master">
                 <i class="bi bi-hdd-network"></i> Device Master
             </a>
             @endif

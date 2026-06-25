@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\DeviceRepairLogController;
 use App\Http\Controllers\EmailAccountController;
 use App\Http\Controllers\EmailAliasController;
 use App\Http\Controllers\EmailMasterController;
@@ -118,6 +119,18 @@ Route::middleware('auth')->group(function () {
         Route::get('devices/export', [DeviceController::class, 'export'])->name('devices.export');
         Route::get('devices/template', [DeviceController::class, 'template'])->name('devices.template');
         Route::resource('devices', DeviceController::class)->only(['index', 'show']);
+    });
+
+    // Device Master — Repair Logs tab (shares the devices module permission)
+    Route::middleware('module:devices,edit')->group(function () {
+        Route::post('device-repair-logs/import', [DeviceRepairLogController::class, 'import'])->name('device-repair-logs.import');
+        Route::delete('device-repair-logs/bulk', [DeviceRepairLogController::class, 'bulkDestroy'])->name('device-repair-logs.bulk-destroy');
+        Route::resource('device-repair-logs', DeviceRepairLogController::class)->except(['index', 'show']);
+    });
+    Route::middleware('module:devices,view')->group(function () {
+        Route::get('device-repair-logs/export', [DeviceRepairLogController::class, 'export'])->name('device-repair-logs.export');
+        Route::get('device-repair-logs/template', [DeviceRepairLogController::class, 'template'])->name('device-repair-logs.template');
+        Route::resource('device-repair-logs', DeviceRepairLogController::class)->only(['index']);
     });
 
     // Email Master (Gmail / Email accounts + Aliases)
