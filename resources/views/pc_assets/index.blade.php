@@ -85,6 +85,8 @@
     </div>
 </div>
 
+@include('pc_assets.partials.tabs')
+
 <div class="modal fade" id="importPcModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

@@ -1059,7 +1059,7 @@
             @if($hasAssets)
             <div class="nav-section">Assets Management</div>
             @if($user->canAccess('pc_assets'))
-            <a href="{{ route('pc-assets.index') }}" class="{{ request()->routeIs('pc-assets.*') ? 'active' : '' }}" title="PC Master">
+            <a href="{{ route('pc-assets.index') }}" class="{{ request()->routeIs('pc-assets.*') || request()->routeIs('repair-logs.*') ? 'active' : '' }}" title="PC Master">
                 <i class="bi bi-pc-display"></i> PC Master
             </a>
             @endif

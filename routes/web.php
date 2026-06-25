@@ -12,6 +12,7 @@ use App\Http\Controllers\LicenseContractController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PcAssetController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RepairLogController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionRenewalController;
 use App\Http\Controllers\UserController;
@@ -54,6 +55,18 @@ Route::middleware('auth')->group(function () {
         Route::get('pc-assets/export', [PcAssetController::class, 'export'])->name('pc-assets.export');
         Route::get('pc-assets/template', [PcAssetController::class, 'template'])->name('pc-assets.template');
         Route::resource('pc-assets', PcAssetController::class)->only(['index', 'show']);
+    });
+
+    // PC Master — Repair Logs tab (shares the pc_assets module permission)
+    Route::middleware('module:pc_assets,edit')->group(function () {
+        Route::post('repair-logs/import', [RepairLogController::class, 'import'])->name('repair-logs.import');
+        Route::delete('repair-logs/bulk', [RepairLogController::class, 'bulkDestroy'])->name('repair-logs.bulk-destroy');
+        Route::resource('repair-logs', RepairLogController::class)->except(['index', 'show']);
+    });
+    Route::middleware('module:pc_assets,view')->group(function () {
+        Route::get('repair-logs/export', [RepairLogController::class, 'export'])->name('repair-logs.export');
+        Route::get('repair-logs/template', [RepairLogController::class, 'template'])->name('repair-logs.template');
+        Route::resource('repair-logs', RepairLogController::class)->only(['index']);
     });
 
     // Subscriptions
