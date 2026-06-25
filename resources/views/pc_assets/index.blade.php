@@ -7,9 +7,13 @@
     $isAdmin = auth()->user()->isAdmin();
     $canEdit = auth()->user()->canEdit('pc_assets');
     $statusOrder = ['Active', 'Free', 'Damage', 'Retirement', 'Low Performance'];
-    $chartData = array_map(fn ($s) => (int) ($statusCounts[$s] ?? 0), $statusOrder);
-    $chartTotal = array_sum($chartData);
-    $kpiTotal     = $chartTotal;
+    // Status totals still drive the KPI cards.
+    $statusData = array_map(fn ($s) => (int) ($statusCounts[$s] ?? 0), $statusOrder);
+    $kpiTotal     = array_sum($statusData);
+    // Department breakdown drives the chart.
+    $deptLabels = array_map(fn ($d) => trim((string) $d) === '' ? 'Unassigned' : $d, array_keys($departmentCounts ?? []));
+    $deptData   = array_map('intval', array_values($departmentCounts ?? []));
+    $chartTotal = array_sum($deptData);
     $kpiActive    = (int) ($statusCounts['Active'] ?? 0);
     $kpiFree      = (int) ($statusCounts['Free'] ?? 0);
     $kpiDamage    = (int) ($statusCounts['Damage'] ?? 0);
@@ -181,14 +185,15 @@
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0"><i class="bi bi-bar-chart-fill text-primary"></i> Status Breakdown</h6>
+                        <h6 class="mb-0"><i class="bi bi-bar-chart-fill text-primary"></i> Department Breakdown</h6>
                         <span class="text-muted small">{{ $chartTotal }} PC{{ $chartTotal === 1 ? '' : 's' }}</span>
                     </div>
                     @if($chartTotal > 0)
                         <div style="position: relative; height: 200px;">
                             <canvas id="pcStatusChart"
-                                    data-chart-labels='@json($statusOrder)'
-                                    data-chart-data='@json($chartData)'></canvas>
+                                    data-chart-labels='@json($deptLabels)'
+                                    data-chart-data='@json($deptData)'
+                                    data-chart-active='@json(request('department'))'></canvas>
                         </div>
                     @else
                         <p class="text-muted small mb-0 text-center py-4">No data to display for the current filters.</p>
@@ -463,12 +468,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-    const STATUS_COLORS = [
-        'rgba(25, 135, 84, 0.75)',   // Active
-        'rgba(13, 202, 240, 0.75)',  // Free
-        'rgba(220, 53, 69, 0.75)',   // Damage
-        'rgba(108, 117, 125, 0.75)', // Retirement
-        'rgba(255, 193, 7, 0.85)',   // Low Performance
+    // Palette cycled across departments (department count is unbounded).
+    const CHART_COLORS = [
+        'rgba(13, 110, 253, 0.75)',  // blue
+        'rgba(25, 135, 84, 0.75)',   // green
+        'rgba(255, 193, 7, 0.85)',   // yellow
+        'rgba(220, 53, 69, 0.75)',   // red
+        'rgba(13, 202, 240, 0.75)',  // cyan
+        'rgba(111, 66, 193, 0.75)',  // purple
+        'rgba(253, 126, 20, 0.80)',  // orange
+        'rgba(32, 201, 151, 0.75)',  // teal
+        'rgba(214, 51, 132, 0.75)',  // pink
+        'rgba(108, 117, 125, 0.75)', // gray
     ];
 
     let chartInstance = null;
@@ -478,6 +489,14 @@
         if (!ctx) return;
         const labels = JSON.parse(ctx.dataset.chartLabels || '[]');
         const data   = JSON.parse(ctx.dataset.chartData   || '[]');
+        // When a department filter is active, emphasize it and dim the rest.
+        const active = (ctx.dataset.chartActive && ctx.dataset.chartActive !== 'null')
+            ? JSON.parse(ctx.dataset.chartActive) : null;
+        const DIMMED = 'rgba(206, 212, 218, 0.55)';
+        const barColors = labels.map((lbl, i) => {
+            const base = CHART_COLORS[i % CHART_COLORS.length];
+            return (active && lbl !== active) ? DIMMED : base;
+        });
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -485,7 +504,7 @@
                 datasets: [{
                     label: 'PCs',
                     data: data,
-                    backgroundColor: STATUS_COLORS.slice(0, labels.length),
+                    backgroundColor: barColors,
                     borderRadius: 6,
                     maxBarThickness: 48,
                 }],

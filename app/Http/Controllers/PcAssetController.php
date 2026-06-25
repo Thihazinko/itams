@@ -27,6 +27,15 @@ class PcAssetController extends Controller
             });
         }
 
+        // Department breakdown reflects the search filter but ignores the
+        // department filter so the chart always shows every department.
+        $departmentCounts = (clone $query)
+            ->selectRaw('department, COUNT(*) as count')
+            ->groupBy('department')
+            ->orderByDesc('count')
+            ->pluck('count', 'department')
+            ->all();
+
         if ($department = $request->get('department')) {
             $query->where('department', $department);
         }
@@ -58,7 +67,7 @@ class PcAssetController extends Controller
             ->limit(8)
             ->get();
 
-        return view('pc_assets.index', compact('assets', 'statusCounts', 'recentLogs'));
+        return view('pc_assets.index', compact('assets', 'statusCounts', 'departmentCounts', 'recentLogs'));
     }
 
     public function create()
