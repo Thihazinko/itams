@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\SanitizesExcelValues;
 use App\Models\EmailAccount;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -12,6 +13,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class EmailAccountsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
+    use SanitizesExcelValues;
+
     public function __construct(private ?string $type = null)
     {
     }
@@ -35,14 +38,14 @@ class EmailAccountsExport implements FromCollection, WithHeadings, WithMapping, 
     public function map($a): array
     {
         return [
-            $a->type,
-            $a->status,
-            $a->name,
-            $a->department,
-            $a->address,
-            $a->username,
-            $a->password, // decrypted via the model cast
-            $a->remark,
+            $this->clean($a->type),
+            $this->clean($a->status),
+            $this->clean($a->name),
+            $this->clean($a->department),
+            $this->clean($a->address),
+            $this->clean($a->username),
+            $this->clean($a->password), // decrypted via the model cast
+            $this->clean($a->remark),
         ];
     }
 
