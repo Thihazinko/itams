@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\SafeEncrypted;
 use Illuminate\Database\Eloquent\Model;
 
 class MailSetting extends Model
@@ -13,7 +14,9 @@ class MailSetting extends Model
     ];
 
     protected $casts = [
-        'password' => 'encrypted',
+        // Returns null rather than throwing when the stored value can't be
+        // decrypted with the current APP_KEY (see App\Casts\SafeEncrypted).
+        'password' => SafeEncrypted::class,
         'enabled' => 'boolean',
         'port' => 'integer',
         'reminder_days_before' => 'integer',

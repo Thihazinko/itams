@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\SafeEncrypted;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
@@ -25,9 +26,12 @@ class PcAsset extends Model
         'purchased_date' => 'date',
         'expire_date' => 'date',
         'expire_permanent' => 'boolean',
-        'admin_password' => 'encrypted',
-        'username' => 'encrypted',
-        'password' => 'encrypted',
+        // SafeEncrypted decrypts like the built-in "encrypted" cast but returns
+        // null instead of throwing on an undecryptable value, so listing/export
+        // won't 500 on a row that can't be decrypted with the current APP_KEY.
+        'admin_password' => SafeEncrypted::class,
+        'username' => SafeEncrypted::class,
+        'password' => SafeEncrypted::class,
     ];
 
     /**
