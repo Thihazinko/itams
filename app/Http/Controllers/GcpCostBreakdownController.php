@@ -28,10 +28,12 @@ class GcpCostBreakdownController extends Controller
         $currency = strtoupper($tab); // 'USD' | 'JPY'
 
         // Period filter (year + optional month) reused by the counts and listing.
+        // Keyed on the Period End date — the billing month shown in the list
+        // (periodLabel() uses period_end) — so filtering matches what users see.
         $period = function ($q) use ($year, $month) {
-            $q->whereYear('period_start', $year);
+            $q->whereYear('period_end', $year);
             if ($month) {
-                $q->whereMonth('period_start', $month);
+                $q->whereMonth('period_end', $month);
             }
         };
 
@@ -55,14 +57,15 @@ class GcpCostBreakdownController extends Controller
 
         $forCurrency($query, $currency);
 
-        $breakdowns = $query->orderByDesc('period_start')->orderByDesc('id')
+        $breakdowns = $query->orderByDesc('period_end')->orderByDesc('id')
             ->paginate(20)->withQueryString();
 
         $gcpCount = GcpCostBreakdown::count();
 
-        // Years that have any data, for the year selector.
-        $years = GcpCostBreakdown::selectRaw('DISTINCT YEAR(period_start) as y')
-            ->whereNotNull('period_start')
+        // Years that have any data, for the year selector — keyed on the same
+        // Period End date used to filter.
+        $years = GcpCostBreakdown::whereNotNull('period_end')
+            ->selectRaw('DISTINCT YEAR(period_end) as y')
             ->orderByDesc('y')
             ->pluck('y')
             ->map(fn ($y) => (int) $y)
@@ -89,13 +92,13 @@ class GcpCostBreakdownController extends Controller
         // Breakdowns for the year in this currency, chronological (months left → right).
         $breakdowns = GcpCostBreakdown::query()
             ->with('lines')
-            ->whereYear('period_start', $year)
+            ->whereYear('period_end', $year)
             ->whereHas('lines', function ($l) use ($isJpy) {
                 $isJpy
                     ? $l->whereNotNull('cost_jpy')
                     : $l->whereNotNull('cost_usd')->whereNull('cost_jpy');
             })
-            ->orderBy('period_start')->orderBy('id')
+            ->orderBy('period_end')->orderBy('id')
             ->get();
 
         // Columns = each breakdown (one month).
@@ -133,9 +136,10 @@ class GcpCostBreakdownController extends Controller
         // Biggest spenders first.
         uksort($matrix, fn ($a, $c) => $rowTotals[$c] <=> $rowTotals[$a]);
 
-        // Years that have data, for the selector.
-        $years = GcpCostBreakdown::selectRaw('DISTINCT YEAR(period_start) as y')
-            ->whereNotNull('period_start')
+        // Years that have data, for the selector — keyed on the Period End date,
+        // consistent with the filter.
+        $years = GcpCostBreakdown::whereNotNull('period_end')
+            ->selectRaw('DISTINCT YEAR(period_end) as y')
             ->orderByDesc('y')->pluck('y')->map(fn ($y) => (int) $y)->all();
         if (! in_array($year, $years, true)) {
             $years[] = $year;
