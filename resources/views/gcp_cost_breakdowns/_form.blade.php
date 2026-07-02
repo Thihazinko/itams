@@ -119,7 +119,7 @@
                     <td><input type="text" name="lines[{{ $i }}][billing_card]" value="{{ $val($row, 'billing_card') }}" class="form-control form-control-sm"></td>
                     <td><input type="text" name="lines[{{ $i }}][card_setting]" value="{{ $val($row, 'card_setting') }}" class="form-control form-control-sm"></td>
                     <td @if($isUsd)class="d-none"@endif><input type="number" step="0.000001" name="lines[{{ $i }}][cost_jpy]" value="{{ $val($row, 'cost_jpy') }}" class="form-control form-control-sm text-end gcp-cost-jpy" @disabled($isUsd) @if($isUsd)title="Yen cost is disabled for USD breakdowns"@endif></td>
-                    <td @unless($isUsd)class="d-none"@endunless><input type="number" step="0.01" name="lines[{{ $i }}][cost_usd]" value="{{ $val($row, 'cost_usd') }}" class="form-control form-control-sm text-end gcp-cost-usd" @readonly(! $isUsd) @unless($isUsd)title="Auto-derived from the yen cost"@endunless></td>
+                    <td @unless($isUsd)class="d-none"@endunless><input type="number" step="0.000001" name="lines[{{ $i }}][cost_usd]" value="{{ $val($row, 'cost_usd') }}" class="form-control form-control-sm text-end gcp-cost-usd" @readonly(! $isUsd) @unless($isUsd)title="Auto-derived from the yen cost"@endunless></td>
                     <td><input type="text" name="lines[{{ $i }}][status]" value="{{ $val($row, 'status') }}" class="form-control form-control-sm" placeholder="e.g. Terminated"></td>
                     <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger gcp-remove-row" title="Remove"><i class="bi bi-x-lg"></i></button></td>
                 </tr>
@@ -148,7 +148,7 @@
         <td><input type="text" name="lines[__INDEX__][billing_card]" class="form-control form-control-sm"></td>
         <td><input type="text" name="lines[__INDEX__][card_setting]" class="form-control form-control-sm"></td>
         <td @if($isUsd)class="d-none"@endif><input type="number" step="0.000001" name="lines[__INDEX__][cost_jpy]" class="form-control form-control-sm text-end gcp-cost-jpy" @disabled($isUsd) @if($isUsd)title="Yen cost is disabled for USD breakdowns"@endif></td>
-        <td @unless($isUsd)class="d-none"@endunless><input type="number" step="0.01" name="lines[__INDEX__][cost_usd]" class="form-control form-control-sm text-end gcp-cost-usd" @readonly(! $isUsd) @unless($isUsd)title="Auto-derived from the yen cost"@endunless></td>
+        <td @unless($isUsd)class="d-none"@endunless><input type="number" step="0.000001" name="lines[__INDEX__][cost_usd]" class="form-control form-control-sm text-end gcp-cost-usd" @readonly(! $isUsd) @unless($isUsd)title="Auto-derived from the yen cost"@endunless></td>
         <td><input type="text" name="lines[__INDEX__][status]" class="form-control form-control-sm" placeholder="e.g. Terminated"></td>
         <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger gcp-remove-row" title="Remove"><i class="bi bi-x-lg"></i></button></td>
     </tr>
@@ -207,7 +207,7 @@
             if (!usd || (!usd.readOnly && usd.value !== '') || !rate || rate <= 0) return;
             const amount = parseFloat(jpy.value);
             if (!isNaN(amount)) {
-                usd.value = (amount / rate).toFixed(2);
+                usd.value = parseFloat((amount / rate).toFixed(6));
             }
         });
 

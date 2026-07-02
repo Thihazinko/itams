@@ -25,7 +25,11 @@
         $s = number_format((float) $v, 6, '.', ',');
         return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
     };
-    $usd = fn ($v) => ($v === null || $v === '') ? '—' : '$ ' . number_format((float) $v, 2);
+    $usd = function ($v) {
+        if ($v === null || $v === '') return '—';
+        $s = number_format((float) $v, 6, '.', ',');
+        return '$ ' . (str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s);
+    };
     $totalJpy = (float) $breakdown->lines->sum('cost_jpy');
     $totalUsd = (float) $breakdown->lines->sum('cost_usd');
     $costCols = 1;
@@ -89,7 +93,7 @@
                 <td colspan="9" class="num">Total Amount</td>
                 <td class="num">
                     @if($isJpy) ¥ {{ $yen($totalJpy) }}
-                    @else $ {{ number_format($totalUsd, 2) }} @endif
+                    @else {{ $usd($totalUsd) }} @endif
                 </td>
                 <td></td>
             </tr>

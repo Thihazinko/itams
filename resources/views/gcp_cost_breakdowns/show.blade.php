@@ -10,7 +10,11 @@
         $s = number_format((float) $v, 6, '.', ',');
         return str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s;
     };
-    $usd = fn ($v) => ($v === null || $v === '') ? '—' : '$ ' . number_format((float) $v, 2);
+    $usd = function ($v) {
+        if ($v === null || $v === '') return '—';
+        $s = number_format((float) $v, 6, '.', ',');
+        return '$ ' . (str_contains($s, '.') ? rtrim(rtrim($s, '0'), '.') : $s);
+    };
     $total = $breakdown->totalCostJpy();
     $totalUsd = $breakdown->totalCostUsd();
     // JPY category shows only the yen column; USD category only the dollar column.
@@ -110,7 +114,7 @@
                 <tr class="fw-bold table-light">
                     <td colspan="9" class="text-end">Total Amount</td>
                     @if($hasJpy)<td class="text-end text-nowrap">¥ {{ $yen($total) }}</td>@endif
-                    @if($hasUsd)<td class="text-end text-nowrap">$ {{ number_format($totalUsd, 2) }}</td>@endif
+                    @if($hasUsd)<td class="text-end text-nowrap">{{ $usd($totalUsd) }}</td>@endif
                     <td></td>
                 </tr>
             </tfoot>

@@ -217,7 +217,9 @@
       "Bash(php -r '$y=file_get_contents\\(\"docker-compose.yml\"\\); echo \"python missing; showing file for manual check\\\\n\";')",
       "Bash(cat .gitignore)",
       "Bash(grep -rln --include='*.php' \"FinancialPoSync\" app routes)",
-      "Bash(grep -rln --include='*.php' -E \"syncLicenses|SOURCE_LICENSE|license_contract_id|licenseContract\" app routes)"
+      "Bash(grep -rln --include='*.php' -E \"syncLicenses|SOURCE_LICENSE|license_contract_id|licenseContract\" app routes)",
+      "Bash(grep -rn -E \"cost_usd|cost_jpy|step=|number_format|toFixed|Cost \\\\\\(|Cost\\\\\\(\\\\\\\\\\\\$\\\\\\)|Cost \\\\\\\\\\\\$\" resources/views/gcp_cost_breakdowns)",
+      "Bash(grep -rn -E 'step=\"0\\\\.01\"|number_format\\\\\\(\\\\$totalUsd, 2\\\\\\)|number_format\\\\\\(\\\\\\(float\\\\\\) \\\\$v, 2\\\\\\)' resources/views/gcp_cost_breakdowns)"
     ]
   }
 }

@@ -127,7 +127,13 @@
                             <button class="btn-icon-soft text-success" title="Duplicate for next month"><i class="bi bi-files"></i></button>
                         </form>
                         <form method="POST" action="{{ route('gcp-costs.destroy', $b) }}" class="d-inline"
-                              onsubmit="return confirm('Delete the GCP breakdown for {{ $b->periodLabel() }}?')">
+                              data-app-confirm
+                              data-confirm-tone="danger"
+                              data-confirm-icon="bi-trash-fill"
+                              data-confirm-title="Delete this breakdown?"
+                              data-confirm-message="This permanently deletes the <strong>{{ $b->periodLabel() }}</strong> GCP cost breakdown and all its project lines."
+                              data-confirm-note="This action cannot be undone."
+                              data-confirm-action="Delete">
                             @csrf @method('DELETE')
                             <button class="btn-icon-soft text-danger" title="Delete"><i class="bi bi-trash"></i></button>
                         </form>
