@@ -24,6 +24,8 @@ class UserController extends Controller
         'can_edit_devices',
         'can_view_email_master',
         'can_edit_email_master',
+        'can_view_financial_management',
+        'can_edit_financial_management',
     ];
 
     public function index(Request $request)

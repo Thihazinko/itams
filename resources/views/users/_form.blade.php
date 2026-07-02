@@ -9,6 +9,8 @@
         'subscriptions'      => 'bi-calendar-event',
         'licenses_contracts' => 'bi-file-earmark-text',
         'email_master'       => 'bi-envelope-at',
+        'financial_management' => 'bi-cash-coin',
+        'gcp_costs'          => 'bi-cloud',
     ];
 @endphp
 
@@ -215,12 +217,17 @@
     .module-card.is-disabled input { pointer-events: none; }
     .module-card.is-disabled .perm-toggle { cursor: not-allowed; }
 
-    [data-bs-theme="dark"] .module-card { background: rgba(30, 36, 48, 0.7); border-color: rgba(255, 255, 255, 0.08); }
-    [data-bs-theme="dark"] .module-card:hover { background: rgba(147, 197, 253, 0.05); border-color: rgba(147, 197, 253, 0.25); }
-    [data-bs-theme="dark"] .module-card.is-on { background: rgba(147, 197, 253, 0.1); border-color: rgba(147, 197, 253, 0.35); }
+    [data-bs-theme="dark"] .module-card { background: rgba(255, 255, 255, 0.035); border-color: rgba(255, 255, 255, 0.12); }
+    [data-bs-theme="dark"] .module-card:hover { background: rgba(147, 197, 253, 0.08); border-color: rgba(147, 197, 253, 0.35); }
+    [data-bs-theme="dark"] .module-card.is-on {
+        background: rgba(147, 197, 253, 0.16);
+        border-color: rgba(147, 197, 253, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.25);
+    }
     [data-bs-theme="dark"] .module-card .module-icon { background: rgba(147, 197, 253, 0.15); color: #93c5fd; }
     [data-bs-theme="dark"] .module-card .perm-toggle { color: #94a3b8; }
     [data-bs-theme="dark"] .module-card .perm-toggle input[type="checkbox"]:checked + span { color: #93c5fd; }
+    [data-bs-theme="dark"] .module-card[data-state="none"] .module-state::before { color: #64748b; }
     [data-bs-theme="dark"] .module-card[data-state="view"] .module-state::before { color: #93c5fd; }
     [data-bs-theme="dark"] .module-card[data-state="edit"] .module-state::before { color: #6ee7b7; }
 </style>

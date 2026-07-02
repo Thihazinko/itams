@@ -8,11 +8,12 @@
         'Pending'   => 'warning',
         'Expired'   => 'danger',
         'Cancelled' => 'secondary',
+        'Ongoing'   => 'info',
         default     => 'secondary',
     };
 
     $today = \Carbon\Carbon::today();
-    $days  = (int) $today->diffInDays($subscription->expire_date, false);
+    $days  = $subscription->expire_date ? (int) $today->diffInDays($subscription->expire_date, false) : null;
     $daysTone = $subscription->renewal_status === 'Renewed'
         ? 'success'
         : ($days < 0 ? 'danger' : ($days <= 30 ? 'warning' : 'secondary'));
@@ -58,7 +59,8 @@
             <span class="badge bg-info-subtle text-info-emphasis me-1">{{ $subscription->service_type }}</span>
             <span class="badge bg-{{ $statusTone }}-subtle text-{{ $statusTone }}-emphasis me-1">{{ $subscription->status }}</span>
             <span class="badge bg-{{ $rsBadge }}-subtle text-{{ $rsBadge }}-emphasis me-1">{{ $subscription->renewal_status }}</span>
-            {{ $subscription->project_name }} &middot; expires {{ $subscription->expire_date->format('Y-m-d') }}
+            {{ $subscription->project_name }}
+            @if($subscription->expire_date) &middot; expires {{ $subscription->expire_date->format('Y-m-d') }} @endif
         </div>
     </div>
     <div class="d-flex gap-2">
@@ -115,13 +117,20 @@
                         @endif
                     </dd>
 
+                    <dt class="col-sm-4 text-muted">Previous Renewal Date</dt>
+                    <dd class="col-sm-8">{{ $subscription->previous_renewal_date?->format('Y-m-d') ?? '—' }}</dd>
+
                     <dt class="col-sm-4 text-muted">Expire Date</dt>
                     <dd class="col-sm-8">
-                        {{ $subscription->expire_date->format('Y-m-d') }}
-                        @if($subscription->renewal_status === 'Renewed')
-                            <span class="badge bg-success-subtle text-success-emphasis ms-1" style="font-size:.65rem;"><i class="bi bi-check2"></i> renewed</span>
+                        @if($subscription->expire_date)
+                            {{ $subscription->expire_date->format('Y-m-d') }}
+                            @if($subscription->renewal_status === 'Renewed')
+                                <span class="badge bg-success-subtle text-success-emphasis ms-1" style="font-size:.65rem;"><i class="bi bi-check2"></i> renewed</span>
+                            @elseif($days !== null)
+                                <span class="badge bg-{{ $daysTone }}-subtle text-{{ $daysTone }}-emphasis ms-1" style="font-size:.65rem;">{{ $days < 0 ? abs($days) . 'd overdue' : $days . 'd left' }}</span>
+                            @endif
                         @else
-                            <span class="badge bg-{{ $daysTone }}-subtle text-{{ $daysTone }}-emphasis ms-1" style="font-size:.65rem;">{{ $days < 0 ? abs($days) . 'd overdue' : $days . 'd left' }}</span>
+                            <span class="text-muted">— <span class="small">(pay as you go)</span></span>
                         @endif
                     </dd>
 

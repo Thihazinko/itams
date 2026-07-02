@@ -22,7 +22,7 @@ class SubscriptionsExport implements FromQuery, WithHeadings, WithMapping, WithS
     {
         return [
             'service_type', 'project_name', 'subscription_name', 'vendor_name', 'status',
-            'period', 'previous_cost', 'expire_date', 'start_using_date', 'renewal_cost', 'currency',
+            'period', 'previous_cost', 'expire_date', 'previous_renewal_date', 'start_using_date', 'renewal_cost', 'currency',
             'renewal_type', 'renewal_status', 'remarks',
         ];
     }
@@ -38,6 +38,7 @@ class SubscriptionsExport implements FromQuery, WithHeadings, WithMapping, WithS
             $s->period,
             $s->previous_cost,
             optional($s->expire_date)->format('Y-m-d'),
+            optional($s->previous_renewal_date)->format('Y-m-d'),
             optional($s->start_using_date)->format('Y-m-d'),
             $s->renewal_cost,
             $s->currency,

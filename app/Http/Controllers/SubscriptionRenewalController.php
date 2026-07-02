@@ -424,12 +424,13 @@ class SubscriptionRenewalController extends Controller
             );
 
             $subscription->update([
-                'renewal_status' => 'Renewed',
-                'expire_date'    => $newExpiry,
-                'previous_cost'  => $subscription->renewal_cost,
-                'renewal_cost'   => $renewal->total_amount,
-                'currency'       => $renewal->currency,
-                'modified_by'    => $user->name,
+                'renewal_status'        => 'Renewed',
+                'previous_renewal_date' => now()->toDateString(),
+                'expire_date'           => $newExpiry,
+                'previous_cost'         => $subscription->renewal_cost,
+                'renewal_cost'          => $renewal->total_amount,
+                'currency'              => $renewal->currency,
+                'modified_by'           => $user->name,
             ]);
 
             $renewal->update([

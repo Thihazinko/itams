@@ -151,6 +151,7 @@ class NotificationController extends Controller
 
         return Subscription::query()
             ->where('status', 'Active')
+            ->where('renewal_type', '!=', 'Pay as you go')
             ->where('renewal_status', '!=', 'Renewed')
             ->whereDate('expire_date', '<=', $threshold)
             ->orderBy('expire_date')

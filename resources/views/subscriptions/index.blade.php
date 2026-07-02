@@ -336,14 +336,15 @@
                     <tbody>
                         @forelse($subscriptions as $i => $sub)
                             @php
-                                $days = (int) \Carbon\Carbon::today()->diffInDays($sub->expire_date, false);
+                                $days = $sub->expire_date ? (int) \Carbon\Carbon::today()->diffInDays($sub->expire_date, false) : null;
                                 $daysTone = $sub->renewal_status === 'Renewed' ? 'success' :
-                                    ($days < 0 ? 'danger' : ($days <= 7 ? 'danger' : ($days <= 30 ? 'warning' : 'secondary')));
+                                    ($days === null ? 'secondary' : ($days < 0 ? 'danger' : ($days <= 7 ? 'danger' : ($days <= 30 ? 'warning' : 'secondary'))));
                                 $rsBadge = match($sub->renewal_status) {
                                     'Renewed'   => 'success',
                                     'Pending'   => 'warning',
                                     'Expired'   => 'danger',
                                     'Cancelled' => 'secondary',
+                                    'Ongoing'   => 'info',
                                     default     => 'secondary',
                                 };
                                 $statusTone = $sub->status === 'Active' ? 'success' : 'secondary';
@@ -381,14 +382,18 @@
                                     <div class="text-muted small">{{ $sub->project_name }}</div>
                                 </td>
                                 <td class="{{ $colClass('vendor') }}">{{ $sub->vendor_name ?: '—' }}</td>
-                                <td class="{{ $colClass('expires') }} text-nowrap small">{{ $sub->expire_date->format('Y-m-d') }}</td>
+                                <td class="{{ $colClass('expires') }} text-nowrap small">{{ optional($sub->expire_date)->format('Y-m-d') ?? '—' }}</td>
                                 <td class="{{ $colClass('days') }}">
                                     @if($sub->renewal_status === 'Renewed')
                                         <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check2"></i> renewed</span>
-                                    @else
+                                    @elseif($sub->renewal_status === 'Ongoing')
+                                        <span class="badge bg-info-subtle text-info-emphasis"><i class="bi bi-infinity"></i> ongoing</span>
+                                    @elseif($days !== null)
                                         <span class="badge bg-{{ $daysTone }}-subtle text-{{ $daysTone }}-emphasis">
                                             {{ $days < 0 ? abs($days) . 'd overdue' : $days . 'd' }}
                                         </span>
+                                    @else
+                                        <span class="text-muted">—</span>
                                     @endif
                                 </td>
                                 <td class="{{ $colClass('inuse') }} text-muted small text-nowrap">

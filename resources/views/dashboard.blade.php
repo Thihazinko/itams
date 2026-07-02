@@ -30,10 +30,16 @@
         @if($user->canAccess('email_master'))
             <a href="{{ route('email-master.index') }}" class="quick-action"><i class="bi bi-envelope-at"></i> Email</a>
         @endif
+        @if($user->canAccess('financial_management'))
+            <a href="{{ route('financial-pos.index') }}" class="quick-action"><i class="bi bi-cash-coin"></i> Finance</a>
+        @endif
+        @if($user->canAccess('gcp_costs'))
+            <a href="{{ route('gcp-costs.index') }}" class="quick-action"><i class="bi bi-cloud"></i> GCP Costs</a>
+        @endif
     </div>
 </div>
 
-<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-3">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-3">
     <div class="col">
         <div class="card kpi-card kpi-blue h-100">
             <div class="card-body">
@@ -71,6 +77,26 @@
                 <div class="kpi-value">{{ number_format($stats['total_email_accounts']) }}</div>
                 <div class="kpi-foot">{{ $stats['gmail_accounts'] }} Gmail &middot; {{ $stats['email_accounts'] }} Email &middot; {{ $stats['email_aliases'] }} alias</div>
                 <i class="bi bi-envelope-at kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card kpi-card kpi-indigo h-100">
+            <div class="card-body">
+                <div class="kpi-label">Purchase Orders</div>
+                <div class="kpi-value">{{ number_format($stats['total_pos']) }}</div>
+                <div class="kpi-foot">{{ number_format($stats['total_receipts']) }} receipts &middot; {{ $stats['pos_this_month'] }} this month</div>
+                <i class="bi bi-cash-coin kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card kpi-card kpi-cyan h-100">
+            <div class="card-body">
+                <div class="kpi-label">GCP Cloud Cost</div>
+                <div class="kpi-value">{{ $stats['gcp_latest_jpy'] ? '¥' . number_format($stats['gcp_latest_jpy']) : '—' }}</div>
+                <div class="kpi-foot">{{ $stats['gcp_latest_period'] ?? 'No reports yet' }} &middot; {{ $stats['gcp_reports'] }} {{ \Illuminate\Support\Str::plural('report', $stats['gcp_reports']) }}</div>
+                <i class="bi bi-cloud kpi-icon"></i>
             </div>
         </div>
     </div>

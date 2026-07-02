@@ -128,6 +128,7 @@ class ExpiryNotificationCounter
     {
         return Subscription::query()
             ->where('status', 'Active')
+            ->where('renewal_type', '!=', 'Pay as you go')
             ->where('renewal_status', '!=', 'Renewed');
     }
 

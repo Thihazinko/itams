@@ -17,12 +17,13 @@ class Subscription extends Model
 
     protected $fillable = [
         'service_type', 'project_name', 'subscription_name', 'vendor_name', 'status',
-        'period', 'previous_cost', 'expire_date', 'start_using_date', 'renewal_cost', 'currency',
+        'period', 'previous_cost', 'expire_date', 'previous_renewal_date', 'start_using_date', 'renewal_cost', 'currency',
         'renewal_type', 'reminder_date', 'renewal_status', 'remarks', 'modified_by',
     ];
 
     protected $casts = [
         'expire_date' => 'date',
+        'previous_renewal_date' => 'date',
         'start_using_date' => 'date',
         'reminder_date' => 'date',
         'previous_cost' => 'decimal:2',
@@ -72,6 +73,43 @@ class Subscription extends Model
         return implode(' ', $parts);
     }
 
+    /**
+     * Renewal Status is derived automatically from Status and Expire Date:
+     *   - Terminated                      => Cancelled
+     *   - Active, past the expire date    => Expired
+     *   - Active, within 1 month of expiry=> Pending
+     *   - Active, otherwise (or no expiry)=> Renewed
+     */
+    public function computeRenewalStatus(?Carbon $today = null): string
+    {
+        $today = $today ? $today->copy()->startOfDay() : Carbon::today();
+
+        if ($this->status === 'Terminated') {
+            return 'Cancelled';
+        }
+
+        // Pay-as-you-go (usage-based billing) has no renewal cycle — always Ongoing.
+        if ($this->renewal_type === 'Pay as you go') {
+            return 'Ongoing';
+        }
+
+        if (! $this->expire_date) {
+            return 'Renewed';
+        }
+
+        $expire = Carbon::parse($this->expire_date)->startOfDay();
+
+        if ($expire->lt($today)) {
+            return 'Expired';
+        }
+
+        if ($expire->lte($today->copy()->addMonthNoOverflow())) {
+            return 'Pending';
+        }
+
+        return 'Renewed';
+    }
+
     public function renewals(): HasMany
     {
         return $this->hasMany(SubscriptionRenewal::class)->orderByDesc('id');
@@ -90,9 +128,50 @@ class Subscription extends Model
             ->first();
     }
 
+    /**
+     * Add the free-text Period (e.g. "1 Year", "2 years", "3", "6 months") to a
+     * base date. A bare number is treated as years. Returns null if unparseable.
+     */
+    public function addPeriodTo(Carbon $base): ?Carbon
+    {
+        $period = trim((string) $this->period);
+        if ($period === '' || ! preg_match('/\d+/', $period, $m)) {
+            return null;
+        }
+
+        $n = (int) $m[0];
+        if ($n <= 0) {
+            return null;
+        }
+
+        if (stripos($period, 'month') !== false) {
+            return $base->copy()->addMonthsNoOverflow($n);
+        }
+        if (stripos($period, 'week') !== false) {
+            return $base->copy()->addWeeks($n);
+        }
+        if (stripos($period, 'day') !== false) {
+            return $base->copy()->addDays($n);
+        }
+
+        return $base->copy()->addYearsNoOverflow($n);
+    }
+
     protected static function booted(): void
     {
         static::saving(function (Subscription $subscription) {
+            // When both Previous Renewal Date and Period are set, the current
+            // term ends at Previous Renewal Date + Period — so derive the Expire
+            // Date from them (this then drives reminder_date and renewal_status).
+            // Pay-as-you-go has no fixed term, so it is exempt.
+            if ($subscription->renewal_type !== 'Pay as you go'
+                && $subscription->previous_renewal_date && filled($subscription->period)) {
+                $due = $subscription->addPeriodTo(Carbon::parse($subscription->previous_renewal_date));
+                if ($due) {
+                    $subscription->expire_date = $due;
+                }
+            }
+
             if ($subscription->expire_date) {
                 $days = 30;
                 try {
@@ -105,6 +184,9 @@ class Subscription extends Model
                 }
                 $subscription->reminder_date = Carbon::parse($subscription->expire_date)->subDays($days);
             }
+
+            // Renewal Status is always derived from Status + Expire Date.
+            $subscription->renewal_status = $subscription->computeRenewalStatus();
         });
     }
 }

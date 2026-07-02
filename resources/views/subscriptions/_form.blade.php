@@ -25,10 +25,6 @@
                 <input type="text" name="vendor_name" value="{{ old('vendor_name', $subscription->vendor_name ?? '') }}" class="form-control" placeholder="e.g. GoDaddy, AWS, Google">
             </div>
             <div class="col-md-4">
-                <label class="form-label">Period</label>
-                <input type="text" name="period" value="{{ old('period', $subscription->period ?? '') }}" class="form-control" placeholder="e.g. 1 Year">
-            </div>
-            <div class="col-md-4">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">
                     <option value="Active" @selected(old('status', $subscription->status ?? 'Active') === 'Active')>Active</option>
@@ -46,12 +42,6 @@
     <div class="card-body">
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">Expire Date <span class="text-danger">*</span></label>
-                <input type="date" name="expire_date" value="{{ old('expire_date', isset($subscription->expire_date) ? $subscription->expire_date->format('Y-m-d') : '') }}" class="form-control @error('expire_date') is-invalid @enderror" required>
-                <small class="text-muted">Reminder fires 30 days before this date.</small>
-                @error('expire_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-4">
                 <label class="form-label">Start Using Date</label>
                 <input type="date" name="start_using_date" value="{{ old('start_using_date', isset($subscription->start_using_date) ? $subscription->start_using_date->format('Y-m-d') : '') }}" class="form-control">
                 <small class="text-muted">When this subscription was first put to use.</small>
@@ -65,12 +55,41 @@
                 </select>
             </div>
             <div class="col-md-4">
+                <label class="form-label">Period</label>
+                <input type="text" name="period" value="{{ old('period', $subscription->period ?? '') }}" class="form-control" placeholder="e.g. 1 Year">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Expire Date</label>
+                <input type="date" name="expire_date" value="{{ old('expire_date', isset($subscription->expire_date) ? $subscription->expire_date->format('Y-m-d') : '') }}" class="form-control @error('expire_date') is-invalid @enderror">
+                <small class="text-muted">Required unless renewal type is "Pay as you go". Auto-set from Previous Renewal Date + Period when both are filled.</small>
+                @error('expire_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Previous Renewal Date</label>
+                <input type="date" name="previous_renewal_date" value="{{ old('previous_renewal_date', isset($subscription->previous_renewal_date) ? $subscription->previous_renewal_date->format('Y-m-d') : '') }}" class="form-control">
+                <small class="text-muted">When this subscription was last renewed.</small>
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Renewal Status</label>
-                <select name="renewal_status" class="form-select">
-                    @foreach(['Pending', 'Renewed', 'Expired', 'Cancelled'] as $s)
-                        <option value="{{ $s }}" @selected(old('renewal_status', $subscription->renewal_status ?? 'Pending') === $s)>{{ $s }}</option>
-                    @endforeach
-                </select>
+                @php
+                    $rsAuto = isset($subscription) ? $subscription->computeRenewalStatus() : null;
+                    $rsBadge = match($rsAuto) {
+                        'Renewed'   => 'success',
+                        'Pending'   => 'warning',
+                        'Expired'   => 'danger',
+                        'Cancelled' => 'secondary',
+                        'Ongoing'   => 'info',
+                        default     => 'secondary',
+                    };
+                @endphp
+                <div class="form-control bg-light d-flex align-items-center">
+                    @if($rsAuto)
+                        <span class="badge bg-{{ $rsBadge }}-subtle text-{{ $rsBadge }}-emphasis">{{ $rsAuto }}</span>
+                    @else
+                        <span class="text-muted small">Set automatically on save</span>
+                    @endif
+                </div>
+                <small class="text-muted">Derived automatically from Status &amp; Expire Date.</small>
             </div>
         </div>
     </div>

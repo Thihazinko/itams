@@ -22,11 +22,9 @@ class CheckExpirations extends Command
     private const MODULES = [
         'subscriptions' => [
             'label' => 'Subscription',
-            'flip_pending_on_send' => true,
         ],
         'licenses_contracts' => [
             'label' => 'License & Contract',
-            'flip_pending_on_send' => false,
         ],
     ];
 
@@ -34,7 +32,7 @@ class CheckExpirations extends Command
     {
         $today = Carbon::today();
 
-        $this->markOverdueSubscriptions($today);
+        $this->refreshRenewalStatuses($today);
 
         $totalBatches = 0;
         foreach (array_keys(self::MODULES) as $moduleKey) {
@@ -46,19 +44,26 @@ class CheckExpirations extends Command
         return self::SUCCESS;
     }
 
-    private function markOverdueSubscriptions(Carbon $today): void
+    /**
+     * Re-derive renewal_status from status + expire_date for every subscription,
+     * so time-based transitions (Renewed -> Pending -> Expired) happen daily.
+     */
+    private function refreshRenewalStatuses(Carbon $today): void
     {
-        $expired = Subscription::where('status', 'Active')
-            ->where('renewal_status', '!=', 'Renewed')
-            ->whereDate('expire_date', '<', $today)
-            ->get();
+        $changed = 0;
 
-        foreach ($expired as $subscription) {
-            $subscription->renewal_status = 'Expired';
-            $subscription->saveQuietly();
-        }
+        Subscription::query()->chunkById(200, function ($subscriptions) use (&$changed, $today) {
+            foreach ($subscriptions as $subscription) {
+                $computed = $subscription->computeRenewalStatus($today);
+                if ($subscription->renewal_status !== $computed) {
+                    $subscription->renewal_status = $computed;
+                    $subscription->saveQuietly();
+                    $changed++;
+                }
+            }
+        });
 
-        $this->info("Marked {$expired->count()} subscription(s) as Expired.");
+        $this->info("Refreshed renewal status on {$changed} subscription(s).");
     }
 
     private function sendStaggeredFor(string $moduleKey, Carbon $today): int
@@ -98,17 +103,6 @@ class CheckExpirations extends Command
                 continue;
             }
 
-            // For subscriptions, flip renewal_status to Pending on send so the
-            // UI shows them as "Pending renewal" until acted on.
-            if ($cfg['flip_pending_on_send']) {
-                foreach ($rows as $s) {
-                    if ($s->renewal_status !== 'Pending') {
-                        $s->renewal_status = 'Pending';
-                        $s->saveQuietly();
-                    }
-                }
-            }
-
             try {
                 Mail::to($recipients)->send(new ExpiryReminderDigest(
                     moduleKey:   $moduleKey,
@@ -135,6 +129,7 @@ class CheckExpirations extends Command
         return match ($moduleKey) {
             'subscriptions' => Subscription::query()
                 ->where('status', 'Active')
+                ->where('renewal_type', '!=', 'Pay as you go')
                 ->where('renewal_status', '!=', 'Renewed'),
             'licenses_contracts' => LicenseContract::query()
                 ->whereNotIn('status', ['Terminated']),

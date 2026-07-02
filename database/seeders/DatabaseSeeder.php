@@ -238,5 +238,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(DeviceSeeder::class);
         $this->call(EmailMasterSeeder::class);
+        $this->call(FinancialManagementSeeder::class);
+        $this->call(GcpCostBreakdownSeeder::class);
     }
 }

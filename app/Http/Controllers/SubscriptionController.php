@@ -267,12 +267,14 @@ class SubscriptionController extends Controller
             'status' => 'required|in:Active,Terminated',
             'period' => 'nullable|string|max:255',
             'previous_cost' => 'nullable|numeric|min:0',
-            'expire_date' => 'required|date',
+            // Optional for pay-as-you-go (no fixed expiry); required otherwise.
+            'expire_date' => ['nullable', 'date', 'required_unless:renewal_type,Pay as you go'],
+            'previous_renewal_date' => 'nullable|date',
             'start_using_date' => 'nullable|date',
             'renewal_cost' => 'nullable|numeric|min:0',
             'currency' => 'required|in:MMK,JPY,USD',
             'renewal_type' => 'required|in:Yearly,Monthly,Pay as you go,One Time',
-            'renewal_status' => 'required|in:Pending,Renewed,Expired,Cancelled',
+            // renewal_status is derived automatically from status + expire_date.
             'remarks' => 'nullable|string',
         ]);
     }

@@ -8,6 +8,7 @@
         'Pending'   => 'warning',
         'Expired'   => 'danger',
         'Cancelled' => 'secondary',
+        'Ongoing'   => 'info',
         default     => 'secondary',
     };
 @endphp
@@ -17,7 +18,8 @@
         <div class="page-subtitle">
             <span class="badge bg-info-subtle text-info-emphasis me-1">{{ $subscription->service_type }}</span>
             <span class="badge bg-{{ $rsBadge }}-subtle text-{{ $rsBadge }}-emphasis me-1">{{ $subscription->renewal_status }}</span>
-            {{ $subscription->project_name }} &middot; expires {{ $subscription->expire_date->format('Y-m-d') }}
+            {{ $subscription->project_name }}
+            @if($subscription->expire_date) &middot; expires {{ $subscription->expire_date->format('Y-m-d') }} @endif
         </div>
     </div>
     <a href="{{ route('subscriptions.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>

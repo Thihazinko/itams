@@ -9,6 +9,9 @@ use App\Http\Controllers\DeviceRepairLogController;
 use App\Http\Controllers\EmailAccountController;
 use App\Http\Controllers\EmailAliasController;
 use App\Http\Controllers\EmailMasterController;
+use App\Http\Controllers\FinancialPoController;
+use App\Http\Controllers\FinancialReceiptController;
+use App\Http\Controllers\GcpCostBreakdownController;
 use App\Http\Controllers\LicenseContractController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PcAssetController;
@@ -165,6 +168,65 @@ Route::middleware('auth')->group(function () {
         Route::get('email-master/aliases/{emailAlias}/edit', [EmailAliasController::class, 'edit'])->whereNumber('emailAlias')->name('email-aliases.edit');
         Route::put('email-master/aliases/{emailAlias}', [EmailAliasController::class, 'update'])->whereNumber('emailAlias')->name('email-aliases.update');
         Route::delete('email-master/aliases/{emailAlias}', [EmailAliasController::class, 'destroy'])->whereNumber('emailAlias')->name('email-aliases.destroy');
+    });
+
+    // Financial Management (approved POs + receipts, budget usage)
+    Route::middleware('module:financial_management,view')->group(function () {
+        Route::get('financial-pos/export', [FinancialPoController::class, 'export'])->name('financial-pos.export');
+        Route::get('financial-pos/{financialPo}/receipts/{receipt}/file', [FinancialReceiptController::class, 'downloadFile'])
+            ->whereNumber('financialPo')->whereNumber('receipt')->name('financial-pos.receipts.file.download');
+        Route::resource('financial-pos', FinancialPoController::class)
+            ->parameters(['financial-pos' => 'financialPo'])
+            ->only(['index', 'show'])
+            ->where(['financialPo' => '[0-9]+']);
+    });
+    Route::middleware('module:financial_management,edit')->group(function () {
+        // POs are system-managed (mirrored from Subscriptions and License &
+        // Contract), so there is no create/delete — only receipts are recorded
+        // by hand against each PO. The sole exception is pay-as-you-go POs, whose
+        // Renewal Cost can be edited (guarded inside the controller).
+        // One-time (manual) purchase orders — e.g. a PC, UPS, hardware — entered
+        // by hand rather than mirrored from a subscription / license.
+        Route::get('financial-pos/create', [FinancialPoController::class, 'create'])->name('financial-pos.create');
+        Route::post('financial-pos', [FinancialPoController::class, 'store'])->name('financial-pos.store');
+        Route::get('financial-pos/{financialPo}/edit', [FinancialPoController::class, 'edit'])
+            ->whereNumber('financialPo')->name('financial-pos.edit');
+        Route::put('financial-pos/{financialPo}', [FinancialPoController::class, 'update'])
+            ->whereNumber('financialPo')->name('financial-pos.update');
+        Route::delete('financial-pos/{financialPo}', [FinancialPoController::class, 'destroy'])
+            ->whereNumber('financialPo')->name('financial-pos.destroy');
+        Route::post('financial-receipts', [FinancialReceiptController::class, 'storeFromHistory'])
+            ->name('financial-receipts.store');
+        Route::post('financial-pos/{financialPo}/receipts', [FinancialReceiptController::class, 'store'])
+            ->whereNumber('financialPo')->name('financial-pos.receipts.store');
+        Route::post('financial-pos/{financialPo}/receipts/quick-upload', [FinancialReceiptController::class, 'quickUpload'])
+            ->whereNumber('financialPo')->name('financial-pos.receipts.quick-upload');
+        Route::post('financial-pos/{financialPo}/receipts/{receipt}/file', [FinancialReceiptController::class, 'uploadFile'])
+            ->whereNumber('financialPo')->whereNumber('receipt')->name('financial-pos.receipts.file.upload');
+        Route::delete('financial-pos/{financialPo}/receipts/{receipt}', [FinancialReceiptController::class, 'destroy'])
+            ->whereNumber('financialPo')->whereNumber('receipt')->name('financial-pos.receipts.destroy');
+    });
+
+    // GCP Cost Breakdown — monthly Google Cloud billing tables (own permission).
+    Route::middleware('module:gcp_costs,view')->group(function () {
+        Route::get('gcp-costs', [GcpCostBreakdownController::class, 'index'])->name('gcp-costs.index');
+        Route::get('gcp-costs/compare', [GcpCostBreakdownController::class, 'compare'])->name('gcp-costs.compare');
+        Route::get('gcp-costs/{gcpCost}', [GcpCostBreakdownController::class, 'show'])
+            ->whereNumber('gcpCost')->name('gcp-costs.show');
+    });
+    Route::middleware('module:gcp_costs,edit')->group(function () {
+        Route::get('gcp-costs/create', [GcpCostBreakdownController::class, 'create'])->name('gcp-costs.create');
+        Route::post('gcp-costs', [GcpCostBreakdownController::class, 'store'])->name('gcp-costs.store');
+        Route::post('gcp-costs/{gcpCost}/mail', [GcpCostBreakdownController::class, 'mail'])
+            ->whereNumber('gcpCost')->name('gcp-costs.mail');
+        Route::post('gcp-costs/{gcpCost}/duplicate', [GcpCostBreakdownController::class, 'duplicate'])
+            ->whereNumber('gcpCost')->name('gcp-costs.duplicate');
+        Route::get('gcp-costs/{gcpCost}/edit', [GcpCostBreakdownController::class, 'edit'])
+            ->whereNumber('gcpCost')->name('gcp-costs.edit');
+        Route::put('gcp-costs/{gcpCost}', [GcpCostBreakdownController::class, 'update'])
+            ->whereNumber('gcpCost')->name('gcp-costs.update');
+        Route::delete('gcp-costs/{gcpCost}', [GcpCostBreakdownController::class, 'destroy'])
+            ->whereNumber('gcpCost')->name('gcp-costs.destroy');
     });
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

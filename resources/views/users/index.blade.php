@@ -129,33 +129,37 @@
                                 <span class="text-muted small">All modules</span>
                             @else
                                 @php $modules = [
-                                    'pc-display'        => ['PC',      'pc_assets'],
-                                    'hdd-network'       => ['Devices', 'devices'],
-                                    'calendar-event'    => ['Subs',    'subscriptions'],
-                                    'file-earmark-text' => ['L&C',     'licenses_contracts'],
+                                    'pc_assets'            => ['PC',      'pc-display'],
+                                    'subscriptions'        => ['Subs',    'calendar-event'],
+                                    'licenses_contracts'   => ['L&C',     'file-earmark-text'],
+                                    'devices'              => ['Devices', 'hdd-network'],
+                                    'email_master'         => ['Email',   'envelope-at'],
+                                    'financial_management' => ['Finance', 'cash-coin'],
+                                    'gcp_costs'            => ['GCP',      'cloud'],
                                 ]; @endphp
-                                <div class="d-flex gap-1 flex-wrap">
-                                    @foreach($modules as $icon => [$label, $key])
+                                <div class="d-flex gap-1 flex-wrap module-access-badges">
+                                    @foreach($modules as $key => [$label, $icon])
                                         @php
+                                            $fullLabel = \App\Models\User::MODULES[$key] ?? $label;
                                             $canEdit = (bool) $u->{"can_edit_{$key}"};
                                             $canView = (bool) $u->{"can_view_{$key}"} || $canEdit;
                                             if ($canEdit) {
-                                                $cls = 'bg-success-subtle text-success-emphasis';
+                                                $cls = 'module-badge-edit';
                                                 $tag = 'V·E';
-                                                $title = "{$label}: view + edit";
+                                                $title = "{$fullLabel}: view + edit";
                                             } elseif ($canView) {
-                                                $cls = 'bg-primary-subtle text-primary-emphasis';
+                                                $cls = 'module-badge-view';
                                                 $tag = 'V';
-                                                $title = "{$label}: view only";
+                                                $title = "{$fullLabel}: view only";
                                             } else {
-                                                $cls = 'bg-light text-muted border';
+                                                $cls = 'module-badge-none';
                                                 $tag = '—';
-                                                $title = "{$label}: no access";
+                                                $title = "{$fullLabel}: no access";
                                             }
                                         @endphp
-                                        <span class="badge {{ $cls }}" title="{{ $title }}">
+                                        <span class="badge module-badge {{ $cls }}" title="{{ $title }}">
                                             <i class="bi bi-{{ $icon }}"></i> {{ $label }}
-                                            <span class="ms-1 opacity-75" style="font-size:.6rem;">{{ $tag }}</span>
+                                            <span class="module-badge-tag">{{ $tag }}</span>
                                         </span>
                                     @endforeach
                                 </div>
@@ -221,5 +225,36 @@
         font-weight: 700;
         border: 0;
     }
+
+    .module-access-badges { max-width: 22rem; }
+    .module-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .28rem .5rem;
+        font-size: .72rem;
+        font-weight: 600;
+        border-radius: .4rem;
+        border: 1px solid transparent;
+        line-height: 1;
+    }
+    .module-badge i { font-size: .82rem; }
+    .module-badge-tag {
+        font-size: .58rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+        padding: .08rem .28rem;
+        border-radius: .3rem;
+        background: rgba(0, 0, 0, 0.06);
+    }
+    .module-badge-edit { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+    .module-badge-view { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+    .module-badge-none { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+    .module-badge-none .module-badge-tag { background: rgba(100, 116, 139, 0.12); }
+
+    [data-bs-theme="dark"] .module-badge-edit { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.3); }
+    [data-bs-theme="dark"] .module-badge-view { background: rgba(147, 197, 253, 0.16); color: #93c5fd; border-color: rgba(147, 197, 253, 0.3); }
+    [data-bs-theme="dark"] .module-badge-none { background: rgba(255, 255, 255, 0.04); color: #64748b; border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .module-badge-tag { background: rgba(255, 255, 255, 0.08); }
 </style>
 @endsection

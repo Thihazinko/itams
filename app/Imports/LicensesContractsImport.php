@@ -91,7 +91,7 @@ class LicensesContractsImport implements ToModel, WithHeadingRow, WithValidation
         return [
             'software_name' => 'required|string|max:255',
             'status' => 'nullable|in:Active,Pending,Expired,Terminated',
-            'renewal_type' => 'nullable|in:Yearly,Monthly,Pay as you go,One Time',
+            'renewal_type' => 'nullable|in:Yearly,Monthly,One Time',
             'expire_date' => 'required',
             'currency' => 'nullable|in:MMK,JPY,USD',
         ];

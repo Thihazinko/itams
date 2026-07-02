@@ -228,7 +228,7 @@ class LicenseContractController extends Controller
         $data = $request->validate([
             'software_name' => 'required|string|max:255',
             'status' => 'required|in:Active,Expired,Terminated,Pending',
-            'renewal_type' => 'required|in:Yearly,Monthly,Pay as you go,One Time',
+            'renewal_type' => 'required|in:Yearly,Monthly,One Time',
             'license_info' => 'nullable|string',
             'last_renewal_date' => 'nullable|date',
             'start_using_date' => 'nullable|date',

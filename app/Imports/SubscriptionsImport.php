@@ -42,6 +42,7 @@ class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             'period' => $row['period'] ?? null,
             'previous_cost' => isset($row['previous_cost']) && $row['previous_cost'] !== '' ? (float) $row['previous_cost'] : null,
             'expire_date' => $this->parseDate($row['expire_date'] ?? null),
+            'previous_renewal_date' => $this->parseDate($row['previous_renewal_date'] ?? null),
             'start_using_date' => $this->parseDate($row['start_using_date'] ?? null),
             'renewal_cost' => isset($row['renewal_cost']) && $row['renewal_cost'] !== '' ? (float) $row['renewal_cost'] : null,
             'currency' => $row['currency'] ?? 'MMK',
@@ -94,10 +95,10 @@ class SubscriptionsImport implements ToModel, WithHeadingRow, WithValidation, Wi
             'project_name' => 'required|string|max:255',
             'subscription_name' => 'required|string|max:255',
             'status' => 'nullable|in:Active,Terminated',
-            'expire_date' => 'required',
+            'expire_date' => 'required_unless:renewal_type,Pay as you go',
             'currency' => 'nullable|in:MMK,JPY,USD',
             'renewal_type' => 'nullable|in:Yearly,Monthly,Pay as you go,One Time',
-            'renewal_status' => 'nullable|in:Pending,Renewed,Expired,Cancelled',
+            'renewal_status' => 'nullable|in:Pending,Renewed,Expired,Cancelled,Ongoing',
         ];
     }
 

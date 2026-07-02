@@ -39,7 +39,7 @@
             <div class="col-md-4">
                 <label class="form-label">Renewal Type</label>
                 <select name="renewal_type" class="form-select">
-                    @foreach(['Yearly', 'Monthly', 'Pay as you go', 'One Time'] as $t)
+                    @foreach(['Yearly', 'Monthly', 'One Time'] as $t)
                         <option value="{{ $t }}" @selected(old('renewal_type', $item->renewal_type ?? 'Yearly') === $t)>{{ $t }}</option>
                     @endforeach
                 </select>

@@ -6,6 +6,9 @@ use App\Models\ActivityLog;
 use App\Models\Device;
 use App\Models\EmailAccount;
 use App\Models\EmailAlias;
+use App\Models\FinancialPo;
+use App\Models\FinancialReceipt;
+use App\Models\GcpCostBreakdown;
 use App\Models\LicenseContract;
 use App\Models\PcAsset;
 use App\Models\Subscription;
@@ -28,6 +31,11 @@ class DashboardController extends Controller
             ->whereBetween('expire_date', [$today, $in30Days])
             ->count();
 
+        $latestGcp = GcpCostBreakdown::with('lines')
+            ->orderByDesc('period_end')
+            ->orderByDesc('id')
+            ->first();
+
         $stats = [
             'total_assets'         => PcAsset::count(),
             'active_assets'        => PcAsset::where('status', 'Active')->count(),
@@ -49,6 +57,15 @@ class DashboardController extends Controller
             'active_email_accounts'   => EmailAccount::where('status', 'Active')->count(),
             'inactive_email_accounts' => EmailAccount::where('status', 'Inactive')->count(),
             'email_aliases'           => EmailAlias::count(),
+
+            'total_pos'            => FinancialPo::count(),
+            'pos_this_month'       => FinancialPo::whereYear('po_date', $today->year)
+                ->whereMonth('po_date', $today->month)->count(),
+            'total_receipts'       => FinancialReceipt::count(),
+
+            'gcp_reports'          => GcpCostBreakdown::count(),
+            'gcp_latest_jpy'       => $latestGcp ? $latestGcp->totalCostJpy() : 0.0,
+            'gcp_latest_period'    => $latestGcp?->periodLabel(),
 
             'expiring_subs'        => $expiringSubsCount,
             'expiring_licenses'    => $expiringLicensesCount,

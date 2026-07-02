@@ -483,6 +483,8 @@
         .kpi-purple { --kpi-accent: #8b5cf6; }
         .kpi-teal   { --kpi-accent: #14b8a6; }
         .kpi-rose   { --kpi-accent: #f43f5e; }
+        .kpi-indigo { --kpi-accent: #6366f1; }
+        .kpi-cyan   { --kpi-accent: #06b6d4; }
 
         .activity-dot {
             width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
@@ -1081,6 +1083,20 @@
             @if($user->canAccess('licenses_contracts'))
             <a href="{{ route('licenses-contracts.index') }}" class="{{ request()->routeIs('licenses-contracts.*') ? 'active' : '' }}" title="License &amp; Contract">
                 <i class="bi bi-file-earmark-text"></i> License &amp; Contract
+            </a>
+            @endif
+            @endif
+
+            @if($user->canAccess('financial_management') || $user->canAccess('gcp_costs'))
+            <div class="nav-section">Finance</div>
+            @if($user->canAccess('financial_management'))
+            <a href="{{ route('financial-pos.index') }}" class="{{ request()->routeIs('financial-pos.*') ? 'active' : '' }}" title="Financial Management">
+                <i class="bi bi-cash-coin"></i> Financial Management
+            </a>
+            @endif
+            @if($user->canAccess('gcp_costs'))
+            <a href="{{ route('gcp-costs.index') }}" class="{{ request()->routeIs('gcp-costs.*') ? 'active' : '' }}" title="GCP Cost Breakdown">
+                <i class="bi bi-cloud"></i> GCP Cost Breakdown
             </a>
             @endif
             @endif

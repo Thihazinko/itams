@@ -16,6 +16,8 @@ class User extends Authenticatable
         'licenses_contracts' => 'License & Contract',
         'devices'            => 'Device Management',
         'email_master'       => 'Email Master',
+        'financial_management' => 'Financial Management',
+        'gcp_costs'          => 'GCP Cost Breakdown',
     ];
 
     protected $fillable = [
@@ -34,6 +36,10 @@ class User extends Authenticatable
         'can_edit_devices',
         'can_view_email_master',
         'can_edit_email_master',
+        'can_view_financial_management',
+        'can_edit_financial_management',
+        'can_view_gcp_costs',
+        'can_edit_gcp_costs',
     ];
 
     protected $hidden = [
@@ -56,6 +62,10 @@ class User extends Authenticatable
             'can_edit_devices' => 'boolean',
             'can_view_email_master' => 'boolean',
             'can_edit_email_master' => 'boolean',
+            'can_view_financial_management' => 'boolean',
+            'can_edit_financial_management' => 'boolean',
+            'can_view_gcp_costs' => 'boolean',
+            'can_edit_gcp_costs' => 'boolean',
         ];
     }
 
