@@ -10,10 +10,15 @@ echo "MySQL is up."
 chown -R www-data:www-data storage bootstrap/cache
 [ -L public/storage ] || php artisan storage:link || true
 
-# --isolated takes a lock via the (database) cache store so that when the app,
-# queue, and scheduler containers boot together only one actually runs the
-# migrations; the others skip straight through instead of racing on the DDL.
-php artisan migrate --isolated --force
+# Only the primary app container runs migrations. The queue and scheduler
+# containers share this image + entrypoint, but docker-compose sets
+# RUN_MIGRATIONS=false on them so they don't race each other on the DDL — they
+# just wait for the app container to bring the schema up to date. We avoid
+# `migrate --isolated` on purpose: it would tie migration success to the cache
+# lock backend being reachable at boot, which is an unnecessary failure mode.
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+    php artisan migrate --force
+fi
 
 if [ "$APP_ENV" = "production" ]; then
     php artisan config:cache
