@@ -382,8 +382,8 @@
     @endif
 </div>
 <div class="text-muted small mb-2">
-    Showing POs dated in <strong>{{ $periodLabel }}</strong>. The
-    <em>Renewal Cost</em> comes from the linked Subscription / License &amp; Contract and matches the budget totals above.
+    Showing POs dated in <strong>{{ $periodLabel }}</strong>. Each PO's
+    <em>amount</em> feeds the budget totals above.
 </div>
 
 <div class="card mb-3">

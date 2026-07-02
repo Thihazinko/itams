@@ -6,7 +6,6 @@ use App\Exports\FinancialPosExport;
 use App\Models\FinancialPo;
 use App\Models\FinancialReceipt;
 use App\Support\ActivityLogger;
-use App\Support\FinancialPoSync;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -15,10 +14,8 @@ class FinancialPoController extends Controller
 {
     public function index(Request $request)
     {
-        // POs are never added by hand — keep the register current by mirroring
-        // approved subscription renewals and qualifying License & Contract records.
-        FinancialPoSync::run();
-
+        // Financial Management is a standalone register: POs are entered by hand
+        // (see create/store) and no longer mirrored from Subscriptions or Licenses.
         $tab = $request->get('tab') === 'receipts' ? 'receipts' : 'pos';
         $currencies = array_keys(FinancialPo::CURRENCIES);
         $sources = array_keys(FinancialPo::SOURCES);
@@ -30,7 +27,7 @@ class FinancialPoController extends Controller
 
         // Per-currency total of renewal costs for the selected period. The figure
         // is the source Renewal Cost (PO total_amount), grouped by renewal date
-        // (po_date) — so it always equals the Subscription / License values.
+        // (po_date) — so it always equals the Subscription values.
         $periodTotals = [];
         foreach ($currencies as $cur) {
             $q = FinancialPo::where('currency', $cur)->whereYear('po_date', $year);

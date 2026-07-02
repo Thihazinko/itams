@@ -19,16 +19,19 @@ class FinancialPo extends Model
     ];
 
     public const SOURCE_MANUAL = 'manual';
+
+    // Retained only for their kept columns/relations (subscription_id,
+    // subscription_renewal_id, license_contract_id). Financial Management no longer
+    // mirrors Subscriptions or License & Contract records — the sync was removed and
+    // POs are now entered by hand — so these sources are deliberately absent from
+    // SOURCES and never appear in the register.
     public const SOURCE_SUBSCRIPTION = 'subscription';
     public const SOURCE_SUBSCRIPTION_PAYG = 'subscription_payg';
     public const SOURCE_LICENSE = 'license_contract';
 
     // Display metadata for each source: [label, badge classes, icon].
     public const SOURCES = [
-        self::SOURCE_MANUAL            => ['label' => 'One-Time Purchase', 'badge' => 'bg-success-subtle text-success-emphasis', 'icon' => 'bi-cart-plus'],
-        self::SOURCE_SUBSCRIPTION      => ['label' => 'Subscription', 'badge' => 'bg-info-subtle text-info-emphasis', 'icon' => 'bi-arrow-repeat'],
-        self::SOURCE_SUBSCRIPTION_PAYG => ['label' => 'Pay as you go', 'badge' => 'bg-primary-subtle text-primary-emphasis', 'icon' => 'bi-calendar-month'],
-        self::SOURCE_LICENSE           => ['label' => 'License & Contract', 'badge' => 'bg-warning-subtle text-warning-emphasis', 'icon' => 'bi-file-earmark-text'],
+        self::SOURCE_MANUAL => ['label' => 'One-Time Purchase', 'badge' => 'bg-success-subtle text-success-emphasis', 'icon' => 'bi-cart-plus'],
     ];
 
     protected $fillable = [

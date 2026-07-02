@@ -214,7 +214,10 @@
       "Read(//c/Program Files/Google/Chrome/Application/**)",
       "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
       "Bash(python -c \"import yaml,sys; yaml.safe_load\\(open\\('docker-compose.yml'\\)\\); print\\('docker-compose.yml: valid YAML'\\)\")",
-      "Bash(php -r '$y=file_get_contents\\(\"docker-compose.yml\"\\); echo \"python missing; showing file for manual check\\\\n\";')"
+      "Bash(php -r '$y=file_get_contents\\(\"docker-compose.yml\"\\); echo \"python missing; showing file for manual check\\\\n\";')",
+      "Bash(cat .gitignore)",
+      "Bash(grep -rln --include='*.php' \"FinancialPoSync\" app routes)",
+      "Bash(grep -rln --include='*.php' -E \"syncLicenses|SOURCE_LICENSE|license_contract_id|licenseContract\" app routes)"
     ]
   }
 }
