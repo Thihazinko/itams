@@ -307,6 +307,12 @@
     foreach ($currencies as $cur) {
         $chartColors[$cur] = $curMeta[$cur]['color'] ?? '#0d6efd';
     }
+    // Only chart currencies that actually have spend this year — an empty flat
+    // line for a zero-total currency reads as broken. Fall back to all if none.
+    $chartCurrencies = array_values(array_filter($currencies, fn ($c) => ($yearTotals[$c] ?? 0) > 0));
+    if (empty($chartCurrencies)) {
+        $chartCurrencies = $currencies;
+    }
 @endphp
 <div class="row g-3 mb-4">
     <div class="col-lg-5">
@@ -317,27 +323,42 @@
             </div>
             @if($yearHasData)
             <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Month</th>
-                            @foreach($currencies as $cur)<th class="text-end">{{ $cur }}</th>@endforeach
+                <table class="table table-sm table-hover align-middle mb-0" style="font-variant-numeric: tabular-nums;">
+                    <thead>
+                        <tr class="text-uppercase small text-muted" style="letter-spacing:.03em;">
+                            <th class="border-0 ps-3">Month</th>
+                            @foreach($currencies as $cur)
+                                <th class="text-end border-0 {{ $loop->last ? 'pe-3' : '' }}">
+                                    <span class="d-inline-flex align-items-center gap-1 justify-content-end">
+                                        <span class="d-inline-block rounded-circle" style="width:8px;height:8px;background:{{ $curMeta[$cur]['color'] ?? '#0d6efd' }};"></span>
+                                        {{ $cur }}
+                                    </span>
+                                </th>
+                            @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($months as $mNum => $mName)
-                        <tr class="{{ $month === $mNum ? 'table-active' : '' }}">
-                            <td class="fw-semibold">{{ $mName }}</td>
+                        <tr class="{{ $month === $mNum ? 'table-active fw-semibold' : '' }}">
+                            <td class="ps-3 {{ $month === $mNum ? '' : 'text-body-secondary' }}">
+                                @if($month === $mNum)<i class="bi bi-caret-right-fill text-primary small me-1"></i>@endif{{ $mName }}
+                            </td>
                             @foreach($currencies as $cur)
-                                <td class="text-end {{ $monthly[$mNum][$cur] > 0 ? '' : 'text-muted' }}">{{ number_format($monthly[$mNum][$cur], $dec($cur)) }}</td>
+                                <td class="text-end {{ $loop->last ? 'pe-3' : '' }} {{ $monthly[$mNum][$cur] > 0 ? '' : 'text-muted opacity-50' }}">
+                                    {{ number_format($monthly[$mNum][$cur], $dec($cur)) }}
+                                </td>
                             @endforeach
                         </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold">
-                            <td>Year Total</td>
-                            @foreach($currencies as $cur)<td class="text-end" style="border-top:2px solid var(--bs-border-color);">{{ number_format($yearTotals[$cur], $dec($cur)) }}</td>@endforeach
+                        <tr class="fw-bold border-top">
+                            <td class="ps-3">Year Total</td>
+                            @foreach($currencies as $cur)
+                                <td class="text-end {{ $loop->last ? 'pe-3' : '' }}" style="color:{{ $curMeta[$cur]['color'] ?? '#0d6efd' }};">
+                                    {{ number_format($yearTotals[$cur], $dec($cur)) }}
+                                </td>
+                            @endforeach
                         </tr>
                     </tfoot>
                 </table>
@@ -354,15 +375,34 @@
         <div class="card h-100">
             <div class="card-header bg-transparent d-flex align-items-center gap-2">
                 <i class="bi bi-bar-chart-line text-primary"></i><strong>Budget Usage</strong>
-                <span class="text-muted small">{{ $year }} · per currency · click a legend to toggle</span>
+                <span class="text-muted small">{{ $year }} · per currency</span>
             </div>
-            <div class="card-body">
+            <div class="card-body d-flex flex-column">
                 @if($yearHasData)
-                <div style="position: relative; height: 320px;">
-                    <canvas id="budgetUsageChart"
-                            data-months='@json(array_values($months))'
-                            data-series='@json($chartSeries)'
-                            data-colors='@json($chartColors)'></canvas>
+                @php $single = count($chartCurrencies) === 1; @endphp
+                <div class="row g-3 flex-grow-1">
+                    @foreach($chartCurrencies as $cur)
+                    <div class="{{ $single ? 'col-12' : 'col-md-6' }} d-flex">
+                        <div class="border rounded-3 p-2 w-100 d-flex flex-column" style="border-left:3px solid {{ $chartColors[$cur] }} !important;">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="small fw-semibold d-flex align-items-center gap-1">
+                                    <span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:{{ $chartColors[$cur] }};"></span>
+                                    {{ \App\Models\FinancialPo::CURRENCIES[$cur] ?? $cur }}
+                                </span>
+                                <span class="badge rounded-pill" style="background:{{ $chartColors[$cur] }}1a;color:{{ $chartColors[$cur] }};">
+                                    {{ number_format($yearTotals[$cur], $dec($cur)) }}
+                                </span>
+                            </div>
+                            <div class="position-relative flex-grow-1" style="min-height: {{ $single ? 240 : 150 }}px;">
+                                <canvas class="budget-usage-chart"
+                                        data-currency='@json($cur)'
+                                        data-months='@json(array_values($months))'
+                                        data-values='@json($chartSeries[$cur])'
+                                        data-color='@json($chartColors[$cur])'></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
                 @else
                 <p class="text-muted small text-center py-5 mb-0">No data to chart for {{ $year }}.</p>
@@ -502,59 +542,51 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
     (function () {
-        const el = document.getElementById('budgetUsageChart');
-        if (!el || typeof Chart === 'undefined') return;
+        if (typeof Chart === 'undefined') return;
 
-        const months = JSON.parse(el.dataset.months || '[]');
-        const series = JSON.parse(el.dataset.series || '{}');
-        const colors = JSON.parse(el.dataset.colors || '{}');
+        document.querySelectorAll('.budget-usage-chart').forEach(function (el) {
+            const cur = JSON.parse(el.dataset.currency || '""');
+            const months = JSON.parse(el.dataset.months || '[]');
+            const values = JSON.parse(el.dataset.values || '[]');
+            const color = JSON.parse(el.dataset.color || '"#0d6efd"');
 
-        const datasets = Object.keys(series).map(function (cur) {
-            const color = colors[cur] || '#0d6efd';
-            return {
-                label: cur,
-                data: series[cur],
-                borderColor: color,
-                backgroundColor: color + '33',
-                tension: 0.3,
-                fill: true,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                borderWidth: 2,
-            };
-        });
-
-        new Chart(el, {
-            type: 'line',
-            data: { labels: months, datasets: datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' },
-                         ticks: { callback: function (v) { return Number(v).toLocaleString(); } } },
-                    x: { grid: { display: false } },
+            new Chart(el, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: cur,
+                        data: values,
+                        borderColor: color,
+                        backgroundColor: color + '33',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        borderWidth: 2,
+                    }],
                 },
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            pointStyle: 'rect',
-                            boxWidth: 12,
-                            boxHeight: 12,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' },
+                             ticks: { callback: function (v) { return Number(v).toLocaleString(); } } },
+                        x: { grid: { display: false } },
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    return cur + ' ' + Number(ctx.parsed.y).toLocaleString();
+                                }
+                            }
                         },
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) {
-                                return ctx.dataset.label + ' ' + Number(ctx.parsed.y).toLocaleString();
-                            }
-                        }
-                    },
                 },
-            },
+            });
         });
     })();
 </script>
