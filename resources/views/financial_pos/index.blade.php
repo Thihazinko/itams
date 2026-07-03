@@ -152,7 +152,14 @@
                     </td>
                     <td class="text-end text-nowrap pe-3">
                         @if($canEdit)
-                            <form method="POST" action="{{ route('financial-pos.receipts.destroy', [$r->financial_po_id, $r->id]) }}" class="d-inline" onsubmit="return confirm('Delete this receipt?')">
+                            <form method="POST" action="{{ route('financial-pos.receipts.destroy', [$r->financial_po_id, $r->id]) }}" class="d-inline"
+                                  data-app-confirm
+                                  data-confirm-tone="danger"
+                                  data-confirm-icon="bi-trash-fill"
+                                  data-confirm-title="Delete this receipt?"
+                                  data-confirm-message="This removes receipt <strong>{{ e($r->receipt_number ?: '#' . $r->id) }}</strong> from PO <strong>{{ e(optional($r->financialPo)->po_number) }}</strong>."
+                                  data-confirm-note="This action cannot be undone."
+                                  data-confirm-action="Delete">
                                 @csrf @method('DELETE')
                                 <button class="btn-icon-soft text-danger" title="Delete"><i class="bi bi-trash"></i></button>
                             </form>
@@ -510,7 +517,13 @@
                         <a href="{{ route('financial-pos.show', $po) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                         @if($canEdit)
                         <form method="POST" action="{{ route('financial-pos.destroy', $po) }}" class="d-inline"
-                              onsubmit="return confirm('Delete PO {{ $po->po_number }}? It will be removed from the register.')">
+                              data-app-confirm
+                              data-confirm-tone="danger"
+                              data-confirm-icon="bi-trash-fill"
+                              data-confirm-title="Delete this purchase order?"
+                              data-confirm-message="This removes PO <strong>{{ e($po->po_number) }}</strong> ({{ e($po->subject) }}) from the register{{ ($po->receipts_count ?? 0) > 0 ? ', along with its ' . $po->receipts_count . ' receipt' . ($po->receipts_count === 1 ? '' : 's') : '' }}."
+                              data-confirm-note="This action cannot be undone."
+                              data-confirm-action="Delete">
                             @csrf @method('DELETE')
                             <button class="btn-icon-soft text-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
                         </form>

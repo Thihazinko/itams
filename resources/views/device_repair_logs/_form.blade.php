@@ -12,7 +12,7 @@
                     <option value="">— Select a device —</option>
                     @foreach($deviceOptions as $device)
                         <option value="{{ $device->id }}" @selected((int) old('device_id', $log->device_id ?? 0) === $device->id)>
-                            {{ $device->item_name }}@if($device->serial_number) ({{ $device->serial_number }})@endif@if($device->category) — {{ $device->category }}@endif
+                            {{ $device->item_name }}{{ $device->serial_number ? ' (' . $device->serial_number . ')' : '' }}{{ $device->category ? ' — ' . $device->category : '' }}
                         </option>
                     @endforeach
                 </select>

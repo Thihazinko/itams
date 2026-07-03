@@ -165,16 +165,47 @@ class FinancialPoController extends Controller
     public function create()
     {
         return view('financial_pos.create', [
-            'currencies' => array_keys(FinancialPo::CURRENCIES),
+            'currencies'    => array_keys(FinancialPo::CURRENCIES),
+            'subscriptions' => \App\Models\Subscription::orderBy('subscription_name')
+                ->get(['id', 'subscription_name', 'service_type', 'vendor_name', 'currency', 'renewal_cost']),
+            // License & Contract records the PO can link to — permanent (never
+            // expiring) licenses are excluded, as they have no renewal to bill.
+            'licenses'      => \App\Models\LicenseContract::where(function ($q) {
+                    $q->where('expire_permanent', false)->orWhereNull('expire_permanent');
+                })
+                ->orderBy('software_name')
+                ->get(['id', 'software_name', 'vendor_name', 'currency', 'renewal_cost']),
         ]);
     }
 
     public function store(Request $request)
     {
+        $source = $request->input('source', FinancialPo::SOURCE_MANUAL);
+        if (! array_key_exists($source, FinancialPo::SOURCES)) {
+            $source = FinancialPo::SOURCE_MANUAL;
+        }
+
         $data = $this->validateManual($request);
+        $data['source'] = $source;
+
+        // A subscription / license PO links back to the chosen source record.
+        if ($source === FinancialPo::SOURCE_SUBSCRIPTION) {
+            $request->validate(
+                ['subscription_id' => ['required', Rule::exists('subscriptions', 'id')]],
+                ['subscription_id.required' => 'Please choose a subscription to link this purchase order to.',
+                 'subscription_id.exists'   => 'The selected subscription no longer exists.']
+            );
+            $data['subscription_id'] = (int) $request->input('subscription_id');
+        } elseif ($source === FinancialPo::SOURCE_LICENSE) {
+            $request->validate(
+                ['license_contract_id' => ['required', Rule::exists('licenses_contracts', 'id')]],
+                ['license_contract_id.required' => 'Please choose a license & contract to link this purchase order to.',
+                 'license_contract_id.exists'   => 'The selected license & contract no longer exists.']
+            );
+            $data['license_contract_id'] = (int) $request->input('license_contract_id');
+        }
 
         $data['po_number']   = $data['po_number'] ?: FinancialPo::generatePoNumber();
-        $data['source']      = FinancialPo::SOURCE_MANUAL;
         $data['created_by']  = $request->user()->name;
         $data['modified_by'] = $request->user()->name;
 
@@ -182,7 +213,7 @@ class FinancialPoController extends Controller
 
         ActivityLogger::log(
             action: 'created',
-            description: "Added one-time PO {$po->po_number} ({$po->subject})",
+            description: "Added {$po->sourceMeta()['label']} PO {$po->po_number} ({$po->subject})",
             subject: $po,
         );
 

@@ -29,9 +29,13 @@ class FinancialPo extends Model
     public const SOURCE_SUBSCRIPTION_PAYG = 'subscription_payg';
     public const SOURCE_LICENSE = 'license_contract';
 
-    // Display metadata for each source: [label, badge classes, icon].
+    // Display metadata for each source: [label, badge classes, icon]. POs can be
+    // entered by hand as a one-time purchase, or linked to an existing
+    // Subscription or (non-permanent) License & Contract record at creation time.
     public const SOURCES = [
-        self::SOURCE_MANUAL => ['label' => 'One-Time Purchase', 'badge' => 'bg-success-subtle text-success-emphasis', 'icon' => 'bi-cart-plus'],
+        self::SOURCE_MANUAL       => ['label' => 'One-Time Purchase', 'badge' => 'bg-success-subtle text-success-emphasis', 'icon' => 'bi-cart-plus'],
+        self::SOURCE_SUBSCRIPTION => ['label' => 'Subscription', 'badge' => 'bg-primary-subtle text-primary-emphasis', 'icon' => 'bi-arrow-repeat'],
+        self::SOURCE_LICENSE      => ['label' => 'License & Contract', 'badge' => 'bg-warning-subtle text-warning-emphasis', 'icon' => 'bi-key'],
     ];
 
     protected $fillable = [

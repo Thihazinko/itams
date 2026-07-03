@@ -219,7 +219,8 @@
       "Bash(grep -rln --include='*.php' \"FinancialPoSync\" app routes)",
       "Bash(grep -rln --include='*.php' -E \"syncLicenses|SOURCE_LICENSE|license_contract_id|licenseContract\" app routes)",
       "Bash(grep -rn -E \"cost_usd|cost_jpy|step=|number_format|toFixed|Cost \\\\\\(|Cost\\\\\\(\\\\\\\\\\\\$\\\\\\)|Cost \\\\\\\\\\\\$\" resources/views/gcp_cost_breakdowns)",
-      "Bash(grep -rn -E 'step=\"0\\\\.01\"|number_format\\\\\\(\\\\$totalUsd, 2\\\\\\)|number_format\\\\\\(\\\\\\(float\\\\\\) \\\\$v, 2\\\\\\)' resources/views/gcp_cost_breakdowns)"
+      "Bash(grep -rn -E 'step=\"0\\\\.01\"|number_format\\\\\\(\\\\$totalUsd, 2\\\\\\)|number_format\\\\\\(\\\\\\(float\\\\\\) \\\\$v, 2\\\\\\)' resources/views/gcp_cost_breakdowns)",
+      "Bash(grep -o \"financial_pos[\\\\\\\\/][a-z_]*\\\\.blade\\\\.php\" /c/xampp/htdocs/infra-ninja/storage/framework/views/1153c0272b45a2ffeac43ab0a3486add.php)"
     ]
   }
 }

@@ -229,7 +229,14 @@
                             </td>
                             @if($canEdit)
                             <td class="text-end pe-3">
-                                <form method="POST" action="{{ route('financial-pos.receipts.destroy', [$po, $r]) }}" onsubmit="return confirm('Delete this receipt?')">
+                                <form method="POST" action="{{ route('financial-pos.receipts.destroy', [$po, $r]) }}"
+                                      data-app-confirm
+                                      data-confirm-tone="danger"
+                                      data-confirm-icon="bi-trash-fill"
+                                      data-confirm-title="Delete this receipt?"
+                                      data-confirm-message="This removes receipt <strong>{{ e($r->receipt_number ?: '#' . $r->id) }}</strong> from PO <strong>{{ e($po->po_number) }}</strong>."
+                                      data-confirm-note="This action cannot be undone."
+                                      data-confirm-action="Delete">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-sm btn-outline-danger" title="Delete receipt"><i class="bi bi-trash"></i></button>
                                 </form>
