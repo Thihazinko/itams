@@ -10,15 +10,15 @@ class GcpCostBreakdown extends Model
 {
     protected $fillable = [
         'period_start', 'period_end', 'billing_account_name', 'reported_by',
-        'exchange_rate', 'discount_percent', 'tax_percent', 'notes', 'created_by', 'modified_by',
+        'exchange_rate', 'discount_amount', 'tax_amount', 'notes', 'created_by', 'modified_by',
     ];
 
     protected $casts = [
-        'period_start'     => 'date',
-        'period_end'       => 'date',
-        'exchange_rate'    => 'decimal:6',
-        'discount_percent' => 'decimal:4',
-        'tax_percent'      => 'decimal:4',
+        'period_start'    => 'date',
+        'period_end'      => 'date',
+        'exchange_rate'   => 'decimal:6',
+        'discount_amount' => 'decimal:6',
+        'tax_amount'      => 'decimal:6',
     ];
 
     public function lines(): HasMany
@@ -60,31 +60,17 @@ class GcpCostBreakdown extends Model
         return (float) $this->lines->sum('cost_usd');
     }
 
-    /** Whether a discount and/or tax percentage has been set on this breakdown. */
+    /** Whether a manual discount and/or tax amount has been set on this breakdown. */
     public function hasAdjustments(): bool
     {
-        return (float) ($this->discount_percent ?? 0) != 0.0
-            || (float) ($this->tax_percent ?? 0) != 0.0;
+        return (float) ($this->discount_amount ?? 0) != 0.0
+            || (float) ($this->tax_amount ?? 0) != 0.0;
     }
 
-    /** Discount amount for a given subtotal (subtotal × discount%). */
-    public function discountAmount(float $subtotal): float
-    {
-        return round($subtotal * (float) ($this->discount_percent ?? 0) / 100, 6);
-    }
-
-    /** Tax amount for a given subtotal, charged on the post-discount amount. */
-    public function taxAmount(float $subtotal): float
-    {
-        $taxable = $subtotal - $this->discountAmount($subtotal);
-
-        return round($taxable * (float) ($this->tax_percent ?? 0) / 100, 6);
-    }
-
-    /** Subtotal after applying the discount then the tax. */
+    /** Subtotal after subtracting the manual discount and adding the manual tax. */
     public function grandTotal(float $subtotal): float
     {
-        return $subtotal - $this->discountAmount($subtotal) + $this->taxAmount($subtotal);
+        return $subtotal - (float) ($this->discount_amount ?? 0) + (float) ($this->tax_amount ?? 0);
     }
 
     /** Grand total (post discount + tax) for each currency. */

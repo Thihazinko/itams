@@ -23,13 +23,12 @@
     $costCols = 1;
 
     // Money formatter for whichever currency this breakdown is billed in, plus the
-    // discount/tax breakdown applied to the line subtotal.
+    // manual discount/tax applied to the line subtotal.
     $money = fn ($v) => $hasJpy ? '¥ ' . $yen($v) : $usd($v);
     $subtotal = $hasJpy ? $total : $totalUsd;
-    $discountAmt = $breakdown->discountAmount($subtotal);
-    $taxAmt = $breakdown->taxAmount($subtotal);
+    $discountAmt = (float) ($breakdown->discount_amount ?? 0);
+    $taxAmt = (float) ($breakdown->tax_amount ?? 0);
     $grandTotal = $breakdown->grandTotal($subtotal);
-    $pct = fn ($v) => rtrim(rtrim(number_format((float) $v, 4, '.', ''), '0'), '.');
 @endphp
 
 <div class="page-header">
@@ -64,8 +63,8 @@
             <dt class="col-sm-2 text-muted">Exchange Rate</dt><dd class="col-sm-4">{{ $breakdown->exchange_rate ? $yen($breakdown->exchange_rate) : '—' }}</dd>
             <dt class="col-sm-2 text-muted">Billing Account</dt><dd class="col-sm-4">{{ $breakdown->billing_account_name ?: '—' }}</dd>
             <dt class="col-sm-2 text-muted">Reported By</dt><dd class="col-sm-4">{{ $breakdown->reported_by ?: '—' }}</dd>
-            <dt class="col-sm-2 text-muted">Discount</dt><dd class="col-sm-4">{{ (float) $breakdown->discount_percent != 0.0 ? $pct($breakdown->discount_percent) . ' %' : '—' }}</dd>
-            <dt class="col-sm-2 text-muted">Tax</dt><dd class="col-sm-4">{{ (float) $breakdown->tax_percent != 0.0 ? $pct($breakdown->tax_percent) . ' %' : '—' }}</dd>
+            <dt class="col-sm-2 text-muted">Discount</dt><dd class="col-sm-4">{{ $discountAmt != 0.0 ? $money($discountAmt) : '—' }}</dd>
+            <dt class="col-sm-2 text-muted">Tax</dt><dd class="col-sm-4">{{ $taxAmt != 0.0 ? $money($taxAmt) : '—' }}</dd>
             @if($breakdown->notes)
             <dt class="col-sm-2 text-muted">Notes</dt><dd class="col-sm-10" style="white-space: pre-line;">{{ $breakdown->notes }}</dd>
             @endif
@@ -128,16 +127,16 @@
                     <td class="text-end text-nowrap">{{ $money($subtotal) }}</td>
                     <td></td>
                 </tr>
-                @if((float) $breakdown->discount_percent != 0.0)
+                @if($discountAmt != 0.0)
                 <tr class="table-light">
-                    <td colspan="9" class="text-end text-muted">Discount ({{ $pct($breakdown->discount_percent) }}%)</td>
+                    <td colspan="9" class="text-end text-muted">Discount</td>
                     <td class="text-end text-nowrap text-danger">− {{ $money($discountAmt) }}</td>
                     <td></td>
                 </tr>
                 @endif
-                @if((float) $breakdown->tax_percent != 0.0)
+                @if($taxAmt != 0.0)
                 <tr class="table-light">
-                    <td colspan="9" class="text-end text-muted">Tax ({{ $pct($breakdown->tax_percent) }}%)</td>
+                    <td colspan="9" class="text-end text-muted">Tax</td>
                     <td class="text-end text-nowrap">+ {{ $money($taxAmt) }}</td>
                     <td></td>
                 </tr>

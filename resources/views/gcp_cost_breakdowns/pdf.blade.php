@@ -36,10 +36,9 @@
 
     $money = fn ($v) => $isJpy ? '¥ ' . $yen($v) : $usd($v);
     $subtotal = $isJpy ? $totalJpy : $totalUsd;
-    $discountAmt = $breakdown->discountAmount($subtotal);
-    $taxAmt = $breakdown->taxAmount($subtotal);
+    $discountAmt = (float) ($breakdown->discount_amount ?? 0);
+    $taxAmt = (float) ($breakdown->tax_amount ?? 0);
     $grandTotal = $breakdown->grandTotal($subtotal);
-    $pct = fn ($v) => rtrim(rtrim(number_format((float) $v, 4, '.', ''), '0'), '.');
 @endphp
 <body>
     <h1>GCP Cost Breakdown &mdash; {{ $currency }}</h1>
@@ -102,16 +101,16 @@
                 <td class="num">{{ $money($subtotal) }}</td>
                 <td></td>
             </tr>
-            @if((float) $breakdown->discount_percent != 0.0)
+            @if($discountAmt != 0.0)
             <tr>
-                <td colspan="9" class="num">Discount ({{ $pct($breakdown->discount_percent) }}%)</td>
+                <td colspan="9" class="num">Discount</td>
                 <td class="num">&minus; {{ $money($discountAmt) }}</td>
                 <td></td>
             </tr>
             @endif
-            @if((float) $breakdown->tax_percent != 0.0)
+            @if($taxAmt != 0.0)
             <tr>
-                <td colspan="9" class="num">Tax ({{ $pct($breakdown->tax_percent) }}%)</td>
+                <td colspan="9" class="num">Tax</td>
                 <td class="num">+ {{ $money($taxAmt) }}</td>
                 <td></td>
             </tr>

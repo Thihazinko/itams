@@ -67,24 +67,25 @@
                    class="form-control @error('reported_by') is-invalid @enderror">
             @error('reported_by')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
+        @php $curSym = $isUsd ? '$' : '¥'; @endphp
         <div class="col-md-3">
             <label class="form-label">Discount</label>
-            <div class="input-group @error('discount_percent') has-validation @enderror">
-                <input type="number" step="0.01" min="0" max="100" name="discount_percent" id="gcpDiscount"
-                       value="{{ old('discount_percent', isset($breakdown->discount_percent) ? rtrim(rtrim(number_format((float) $breakdown->discount_percent, 4, '.', ''), '0'), '.') : '') }}"
-                       class="form-control text-end @error('discount_percent') is-invalid @enderror" placeholder="0">
-                <span class="input-group-text">%</span>
-                @error('discount_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="input-group @error('discount_amount') has-validation @enderror">
+                <span class="input-group-text">{{ $curSym }}</span>
+                <input type="number" step="0.000001" min="0" name="discount_amount" id="gcpDiscount"
+                       value="{{ old('discount_amount', isset($breakdown->discount_amount) ? rtrim(rtrim(number_format((float) $breakdown->discount_amount, 6, '.', ''), '0'), '.') : '') }}"
+                       class="form-control text-end @error('discount_amount') is-invalid @enderror" placeholder="0">
+                @error('discount_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Tax</label>
-            <div class="input-group @error('tax_percent') has-validation @enderror">
-                <input type="number" step="0.01" min="0" max="100" name="tax_percent" id="gcpTax"
-                       value="{{ old('tax_percent', isset($breakdown->tax_percent) ? rtrim(rtrim(number_format((float) $breakdown->tax_percent, 4, '.', ''), '0'), '.') : '') }}"
-                       class="form-control text-end @error('tax_percent') is-invalid @enderror" placeholder="0">
-                <span class="input-group-text">%</span>
-                @error('tax_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="input-group @error('tax_amount') has-validation @enderror">
+                <span class="input-group-text">{{ $curSym }}</span>
+                <input type="number" step="0.000001" min="0" name="tax_amount" id="gcpTax"
+                       value="{{ old('tax_amount', isset($breakdown->tax_amount) ? rtrim(rtrim(number_format((float) $breakdown->tax_amount, 6, '.', ''), '0'), '.') : '') }}"
+                       class="form-control text-end @error('tax_amount') is-invalid @enderror" placeholder="0">
+                @error('tax_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
         </div>
         <div class="col-md-6">
@@ -156,9 +157,9 @@
                 <dl class="row mb-0 g-1 small">
                     <dt class="col-7 text-muted fw-normal">Subtotal</dt>
                     <dd class="col-5 text-end mb-0" id="gcpSumSubtotal">—</dd>
-                    <dt class="col-7 text-muted fw-normal">Discount <span id="gcpSumDiscountPct" class="text-muted"></span></dt>
+                    <dt class="col-7 text-muted fw-normal">Discount</dt>
                     <dd class="col-5 text-end mb-0 text-danger" id="gcpSumDiscount">—</dd>
-                    <dt class="col-7 text-muted fw-normal">Tax <span id="gcpSumTaxPct" class="text-muted"></span></dt>
+                    <dt class="col-7 text-muted fw-normal">Tax</dt>
                     <dd class="col-5 text-end mb-0" id="gcpSumTax">—</dd>
                     <dt class="col-7 border-top pt-1 fw-bold">Grand Total</dt>
                     <dd class="col-5 border-top pt-1 text-end mb-0 fw-bold" id="gcpSumGrand">—</dd>
@@ -259,9 +260,7 @@
         const els = {
             subtotal: document.getElementById('gcpSumSubtotal'),
             discount: document.getElementById('gcpSumDiscount'),
-            discountPct: document.getElementById('gcpSumDiscountPct'),
             tax: document.getElementById('gcpSumTax'),
-            taxPct: document.getElementById('gcpSumTaxPct'),
             grand: document.getElementById('gcpSumGrand'),
         };
 
@@ -279,18 +278,13 @@
                 const n = parseFloat(input.value);
                 if (!isNaN(n)) subtotal += n;
             });
-            const discPct = Math.max(0, parseFloat(discountInput && discountInput.value) || 0);
-            const taxPct  = Math.max(0, parseFloat(taxInput && taxInput.value) || 0);
-            const discountAmt = subtotal * discPct / 100;
-            const taxable = subtotal - discountAmt;
-            const taxAmt = taxable * taxPct / 100;
-            const grand = taxable + taxAmt;
+            const discountAmt = Math.max(0, parseFloat(discountInput && discountInput.value) || 0);
+            const taxAmt      = Math.max(0, parseFloat(taxInput && taxInput.value) || 0);
+            const grand = subtotal - discountAmt + taxAmt;
 
             els.subtotal.textContent = fmt(subtotal);
             els.discount.textContent = discountAmt ? '− ' + fmt(discountAmt) : fmt(0);
-            els.discountPct.textContent = discPct ? '(' + (Math.round(discPct * 100) / 100) + '%)' : '';
             els.tax.textContent = taxAmt ? '+ ' + fmt(taxAmt) : fmt(0);
-            els.taxPct.textContent = taxPct ? '(' + (Math.round(taxPct * 100) / 100) + '%)' : '';
             els.grand.textContent = fmt(grand);
         }
 
