@@ -67,6 +67,26 @@
                    class="form-control @error('reported_by') is-invalid @enderror">
             @error('reported_by')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
+        <div class="col-md-3">
+            <label class="form-label">Discount</label>
+            <div class="input-group @error('discount_percent') has-validation @enderror">
+                <input type="number" step="0.01" min="0" max="100" name="discount_percent" id="gcpDiscount"
+                       value="{{ old('discount_percent', isset($breakdown->discount_percent) ? rtrim(rtrim(number_format((float) $breakdown->discount_percent, 4, '.', ''), '0'), '.') : '') }}"
+                       class="form-control text-end @error('discount_percent') is-invalid @enderror" placeholder="0">
+                <span class="input-group-text">%</span>
+                @error('discount_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Tax</label>
+            <div class="input-group @error('tax_percent') has-validation @enderror">
+                <input type="number" step="0.01" min="0" max="100" name="tax_percent" id="gcpTax"
+                       value="{{ old('tax_percent', isset($breakdown->tax_percent) ? rtrim(rtrim(number_format((float) $breakdown->tax_percent, 4, '.', ''), '0'), '.') : '') }}"
+                       class="form-control text-end @error('tax_percent') is-invalid @enderror" placeholder="0">
+                <span class="input-group-text">%</span>
+                @error('tax_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+        </div>
         <div class="col-md-6">
             <label class="form-label">Billing Account Name</label>
             <input type="text" name="billing_account_name" value="{{ old('billing_account_name', $breakdown->billing_account_name ?? '') }}"
@@ -128,6 +148,24 @@
         </table>
     </div>
     @error('lines')<div class="text-danger small">{{ $message }}</div>@enderror
+
+    {{-- Live totals: subtotal from the cost column, then discount & tax applied. --}}
+    <div class="d-flex justify-content-end mt-3">
+        <div class="card border-0 bg-body-tertiary" style="min-width:320px;">
+            <div class="card-body py-2 px-3">
+                <dl class="row mb-0 g-1 small">
+                    <dt class="col-7 text-muted fw-normal">Subtotal</dt>
+                    <dd class="col-5 text-end mb-0" id="gcpSumSubtotal">—</dd>
+                    <dt class="col-7 text-muted fw-normal">Discount <span id="gcpSumDiscountPct" class="text-muted"></span></dt>
+                    <dd class="col-5 text-end mb-0 text-danger" id="gcpSumDiscount">—</dd>
+                    <dt class="col-7 text-muted fw-normal">Tax <span id="gcpSumTaxPct" class="text-muted"></span></dt>
+                    <dd class="col-5 text-end mb-0" id="gcpSumTax">—</dd>
+                    <dt class="col-7 border-top pt-1 fw-bold">Grand Total</dt>
+                    <dd class="col-5 border-top pt-1 text-end mb-0 fw-bold" id="gcpSumGrand">—</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
 
     <div class="d-flex gap-2 mt-3">
         <button class="btn btn-primary"><i class="bi bi-check2"></i> {{ $breakdown ? 'Save Changes' : 'Add Breakdown' }}</button>
@@ -197,21 +235,72 @@
         const currency = body.dataset.currency || 'JPY';
         const rateInput = document.querySelector('input[name="exchange_rate"]');
         body.addEventListener('input', function (e) {
-            if (currency !== 'JPY') return;
+            if (currency !== 'JPY') { updateTotals(); return; }
             const jpy = e.target.closest('.gcp-cost-jpy');
-            if (!jpy) return;
+            if (!jpy) { updateTotals(); return; }
             const rate = parseFloat(rateInput && rateInput.value);
             const usd = jpy.closest('tr').querySelector('.gcp-cost-usd');
             // Recompute read-only (auto-derived) cells freely; never clobber a
             // value the user typed into an editable USD cell.
-            if (!usd || (!usd.readOnly && usd.value !== '') || !rate || rate <= 0) return;
-            const amount = parseFloat(jpy.value);
-            if (!isNaN(amount)) {
-                usd.value = parseFloat((amount / rate).toFixed(6));
+            if (usd && !((!usd.readOnly && usd.value !== '') || !rate || rate <= 0)) {
+                const amount = parseFloat(jpy.value);
+                if (!isNaN(amount)) {
+                    usd.value = parseFloat((amount / rate).toFixed(6));
+                }
             }
+            updateTotals();
         });
 
+        // ---- Live totals (Subtotal → Discount → Tax → Grand Total) ----
+        const symbol = currency === 'JPY' ? '¥ ' : '$ ';
+        const costClass = currency === 'JPY' ? '.gcp-cost-jpy' : '.gcp-cost-usd';
+        const discountInput = document.getElementById('gcpDiscount');
+        const taxInput = document.getElementById('gcpTax');
+        const els = {
+            subtotal: document.getElementById('gcpSumSubtotal'),
+            discount: document.getElementById('gcpSumDiscount'),
+            discountPct: document.getElementById('gcpSumDiscountPct'),
+            tax: document.getElementById('gcpSumTax'),
+            taxPct: document.getElementById('gcpSumTaxPct'),
+            grand: document.getElementById('gcpSumGrand'),
+        };
+
+        // Trim trailing zeros, thousands-separated, up to 6 decimals — mirrors the
+        // yen/usd formatting used on the show page and PDF.
+        function fmt(v) {
+            let s = (Math.round(v * 1e6) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 });
+            return symbol + s;
+        }
+
+        function updateTotals() {
+            if (!els.subtotal) return;
+            let subtotal = 0;
+            body.querySelectorAll(costClass).forEach(function (input) {
+                const n = parseFloat(input.value);
+                if (!isNaN(n)) subtotal += n;
+            });
+            const discPct = Math.max(0, parseFloat(discountInput && discountInput.value) || 0);
+            const taxPct  = Math.max(0, parseFloat(taxInput && taxInput.value) || 0);
+            const discountAmt = subtotal * discPct / 100;
+            const taxable = subtotal - discountAmt;
+            const taxAmt = taxable * taxPct / 100;
+            const grand = taxable + taxAmt;
+
+            els.subtotal.textContent = fmt(subtotal);
+            els.discount.textContent = discountAmt ? '− ' + fmt(discountAmt) : fmt(0);
+            els.discountPct.textContent = discPct ? '(' + (Math.round(discPct * 100) / 100) + '%)' : '';
+            els.tax.textContent = taxAmt ? '+ ' + fmt(taxAmt) : fmt(0);
+            els.taxPct.textContent = taxPct ? '(' + (Math.round(taxPct * 100) / 100) + '%)' : '';
+            els.grand.textContent = fmt(grand);
+        }
+
+        if (discountInput) discountInput.addEventListener('input', updateTotals);
+        if (taxInput) taxInput.addEventListener('input', updateTotals);
+        addBtn.addEventListener('click', updateTotals);
+        body.addEventListener('click', updateTotals); // row removals
+
         renumber();
+        updateTotals();
     })();
 </script>
 @endpush

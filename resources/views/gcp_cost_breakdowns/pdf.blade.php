@@ -33,6 +33,13 @@
     $totalJpy = (float) $breakdown->lines->sum('cost_jpy');
     $totalUsd = (float) $breakdown->lines->sum('cost_usd');
     $costCols = 1;
+
+    $money = fn ($v) => $isJpy ? '¥ ' . $yen($v) : $usd($v);
+    $subtotal = $isJpy ? $totalJpy : $totalUsd;
+    $discountAmt = $breakdown->discountAmount($subtotal);
+    $taxAmt = $breakdown->taxAmount($subtotal);
+    $grandTotal = $breakdown->grandTotal($subtotal);
+    $pct = fn ($v) => rtrim(rtrim(number_format((float) $v, 4, '.', ''), '0'), '.');
 @endphp
 <body>
     <h1>GCP Cost Breakdown &mdash; {{ $currency }}</h1>
@@ -89,14 +96,38 @@
         </tbody>
         @if($breakdown->lines->isNotEmpty())
         <tfoot>
+            @if($breakdown->hasAdjustments())
             <tr>
-                <td colspan="9" class="num">Total Amount</td>
-                <td class="num">
-                    @if($isJpy) ¥ {{ $yen($totalJpy) }}
-                    @else {{ $usd($totalUsd) }} @endif
-                </td>
+                <td colspan="9" class="num">Subtotal</td>
+                <td class="num">{{ $money($subtotal) }}</td>
                 <td></td>
             </tr>
+            @if((float) $breakdown->discount_percent != 0.0)
+            <tr>
+                <td colspan="9" class="num">Discount ({{ $pct($breakdown->discount_percent) }}%)</td>
+                <td class="num">&minus; {{ $money($discountAmt) }}</td>
+                <td></td>
+            </tr>
+            @endif
+            @if((float) $breakdown->tax_percent != 0.0)
+            <tr>
+                <td colspan="9" class="num">Tax ({{ $pct($breakdown->tax_percent) }}%)</td>
+                <td class="num">+ {{ $money($taxAmt) }}</td>
+                <td></td>
+            </tr>
+            @endif
+            <tr>
+                <td colspan="9" class="num">Grand Total</td>
+                <td class="num">{{ $money($grandTotal) }}</td>
+                <td></td>
+            </tr>
+            @else
+            <tr>
+                <td colspan="9" class="num">Total Amount</td>
+                <td class="num">{{ $money($subtotal) }}</td>
+                <td></td>
+            </tr>
+            @endif
         </tfoot>
         @endif
     </table>

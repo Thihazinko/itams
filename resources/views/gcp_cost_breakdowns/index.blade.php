@@ -99,10 +99,14 @@
                     <td>{{ $b->reported_by ?: '—' }}</td>
                     <td class="text-end">{{ $b->exchange_rate ? rtrim(rtrim(number_format((float) $b->exchange_rate, 6, '.', ','), '0'), '.') : '—' }}</td>
                     <td class="text-center">{{ $b->lines_count }}</td>
+                    @php
+                        $rowSubtotal = $tab === 'jpy' ? (float) ($b->total_cost_jpy ?? 0) : (float) ($b->total_cost_usd ?? 0);
+                        $rowGrand = $b->grandTotal($rowSubtotal);
+                    @endphp
                     @if($tab === 'jpy')
-                    <td class="text-end text-nowrap fw-semibold">¥ {{ $yen($b->total_cost_jpy ?? 0) }}</td>
+                    <td class="text-end text-nowrap fw-semibold">¥ {{ $yen($rowGrand) }}@if($b->hasAdjustments())<i class="bi bi-info-circle text-muted ms-1" title="After {{ rtrim(rtrim(number_format((float) $b->discount_percent, 4, '.', ''), '0'), '.') }}% discount / {{ rtrim(rtrim(number_format((float) $b->tax_percent, 4, '.', ''), '0'), '.') }}% tax"></i>@endif</td>
                     @else
-                    <td class="text-end text-nowrap fw-semibold">$ {{ number_format((float) ($b->total_cost_usd ?? 0), 6) }}</td>
+                    <td class="text-end text-nowrap fw-semibold">$ {{ number_format($rowGrand, 6) }}@if($b->hasAdjustments())<i class="bi bi-info-circle text-muted ms-1" title="After {{ rtrim(rtrim(number_format((float) $b->discount_percent, 4, '.', ''), '0'), '.') }}% discount / {{ rtrim(rtrim(number_format((float) $b->tax_percent, 4, '.', ''), '0'), '.') }}% tax"></i>@endif</td>
                     @endif
                     <td class="text-end text-nowrap pe-3">
                         <a href="{{ route('gcp-costs.show', $b) }}" class="btn-icon-soft" title="View"><i class="bi bi-eye"></i></a>
