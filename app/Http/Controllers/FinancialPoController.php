@@ -275,8 +275,8 @@ class FinancialPoController extends Controller
 
     /**
      * Shared validation for one-time PO create/update. po_number is optional
-     * (auto-generated when blank) and unique across all POs, including
-     * soft-deleted ones, since the DB unique index spans them too.
+     * (auto-generated when blank) and unique across all POs. Deleting a PO now
+     * removes it outright, so a deleted PO's number is freed for reuse.
      */
     protected function validateManual(Request $request, ?FinancialPo $ignore = null): array
     {
@@ -293,9 +293,9 @@ class FinancialPoController extends Controller
     }
 
     /**
-     * Dismiss a PO from the register. POs are mirrored from their sources on
-     * every view, so this is a soft delete — the sync recognises the dismissed
-     * PO (via withTrashed checks) and won't regenerate it.
+     * Remove a PO from the register. POs are entered by hand (no sync mirrors
+     * them back), so this deletes the row for good — its receipts cascade and
+     * its po_number becomes available again.
      */
     public function destroy(Request $request, FinancialPo $financialPo)
     {

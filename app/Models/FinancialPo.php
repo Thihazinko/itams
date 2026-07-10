@@ -5,13 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class FinancialPo extends Model
 {
-    use SoftDeletes;
-
     public const CURRENCIES = [
         'MMK' => 'Myanmar (MMK)',
         'JPY' => 'Japan (JPY)',
@@ -115,7 +112,7 @@ class FinancialPo extends Model
     {
         do {
             $candidate = 'PO-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5));
-        } while (static::withTrashed()->where('po_number', $candidate)->exists());
+        } while (static::where('po_number', $candidate)->exists());
 
         return $candidate;
     }
