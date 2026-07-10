@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\GcpCostBreakdownExport;
 use App\Mail\GcpCostReport;
 use App\Models\GcpCostBreakdown;
 use App\Support\ActivityLogger;
@@ -9,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GcpCostBreakdownController extends Controller
 {
@@ -337,6 +339,21 @@ class GcpCostBreakdownController extends Controller
         $gcpCost->load('lines');
 
         return view('gcp_cost_breakdowns.edit', ['breakdown' => $gcpCost]);
+    }
+
+    /**
+     * Download a single month's breakdown as an Excel workbook — the project
+     * lines plus the Subtotal / Discount / Tax / Grand Total footer, in the
+     * breakdown's own currency.
+     */
+    public function export(GcpCostBreakdown $gcpCost)
+    {
+        $gcpCost->load('lines');
+
+        $currency = $gcpCost->lines->contains(fn ($l) => $l->cost_jpy !== null) ? 'JPY' : 'USD';
+        $fileName = 'GCP-Cost-' . $currency . '-' . str_replace(' ', '-', $gcpCost->periodLabel()) . '.xlsx';
+
+        return Excel::download(new GcpCostBreakdownExport($gcpCost), $fileName);
     }
 
     public function update(Request $request, GcpCostBreakdown $gcpCost)

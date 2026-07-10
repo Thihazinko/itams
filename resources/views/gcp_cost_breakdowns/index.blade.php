@@ -116,6 +116,7 @@
                     <td class="text-end text-nowrap pe-3">
                         <a href="{{ route('gcp-costs.show', $b) }}" class="btn-icon-soft" title="View"><i class="bi bi-eye"></i></a>
                         @if($canEdit)
+                        <a href="{{ route('gcp-costs.export', $b) }}" class="btn-icon-soft text-success" title="Export to Excel"><i class="bi bi-file-earmark-excel"></i></a>
                         <a href="{{ route('gcp-costs.edit', $b) }}" class="btn-icon-soft" title="Edit"><i class="bi bi-pencil"></i></a>
                         <span class="form-check form-switch d-inline-flex align-items-center m-0 ms-1 me-1 align-middle"
                               title="Mail sending — send this month's breakdown by email">

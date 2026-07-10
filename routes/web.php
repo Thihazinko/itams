@@ -215,6 +215,8 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('gcpCost')->name('gcp-costs.show');
     });
     Route::middleware('module:gcp_costs,edit')->group(function () {
+        Route::get('gcp-costs/{gcpCost}/export', [GcpCostBreakdownController::class, 'export'])
+            ->whereNumber('gcpCost')->name('gcp-costs.export');
         Route::get('gcp-costs/create', [GcpCostBreakdownController::class, 'create'])->name('gcp-costs.create');
         Route::post('gcp-costs', [GcpCostBreakdownController::class, 'store'])->name('gcp-costs.store');
         Route::post('gcp-costs/{gcpCost}/mail', [GcpCostBreakdownController::class, 'mail'])
