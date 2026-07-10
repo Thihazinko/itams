@@ -274,6 +274,31 @@ class FinancialPoController extends Controller
     }
 
     /**
+     * Update just the PO number. Mirrored POs (Subscription / License) are
+     * read-only apart from this — their number is a local reference that can be
+     * corrected without touching the linked record's figures.
+     */
+    public function updatePoNumber(Request $request, FinancialPo $financialPo)
+    {
+        $data = $request->validate([
+            'po_number' => ['required', 'string', 'max:255', Rule::unique('financial_pos', 'po_number')->ignore($financialPo->id)],
+        ]);
+
+        $financialPo->update([
+            'po_number'   => $data['po_number'],
+            'modified_by' => $request->user()->name,
+        ]);
+
+        ActivityLogger::log(
+            action: 'updated',
+            description: "Updated PO number to {$financialPo->po_number} ({$financialPo->subject})",
+            subject: $financialPo,
+        );
+
+        return back()->with('success', 'PO number updated.');
+    }
+
+    /**
      * Shared validation for one-time PO create/update. po_number is optional
      * (auto-generated when blank) and unique across all POs. Deleting a PO now
      * removes it outright, so a deleted PO's number is freed for reuse.

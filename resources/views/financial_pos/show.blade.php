@@ -85,6 +85,22 @@
                     <dt class="col-12 text-muted mt-2">Notes</dt><dd class="col-12" style="white-space: pre-line;">{{ $po->notes }}</dd>
                     @endif
                 </dl>
+                @if($canEdit && ! $po->isManual())
+                {{-- Mirrored POs (Subscription / License / pay-as-you-go) are otherwise
+                     read-only, but their PO number is a local reference and can be fixed. --}}
+                <form method="POST" action="{{ route('financial-pos.po-number.update', $po) }}" class="mt-3">
+                    @csrf @method('PATCH')
+                    <label class="form-label small mb-1 fw-semibold">PO Number</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bi bi-hash text-muted"></i></span>
+                        <input type="text" name="po_number" value="{{ old('po_number', $po->po_number) }}"
+                               class="form-control @error('po_number') is-invalid @enderror" required maxlength="255">
+                        <button class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
+                        @error('po_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-text">Must stay unique across all purchase orders.</div>
+                </form>
+                @endif
                 @if($po->isPayAsYouGo())
                     @if($canEdit)
                     <form method="POST" action="{{ route('financial-pos.update', $po) }}" class="mt-3">
@@ -117,7 +133,7 @@
                 @else
                 <div class="alert alert-info small mt-3 mb-0 d-flex gap-2">
                     <i class="bi bi-info-circle"></i>
-                    <span>This PO is mirrored from <strong>{{ $po->sourceMeta()['label'] }}</strong> and is read-only here. You can still record its receipts below.</span>
+                    <span>This PO is mirrored from <strong>{{ $po->sourceMeta()['label'] }}</strong>. Its figures are read-only here@if($canEdit), but you can change its PO number above@endif. You can record its receipts below.</span>
                 </div>
                 @endif
             </div>

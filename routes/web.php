@@ -193,6 +193,10 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('financialPo')->name('financial-pos.edit');
         Route::put('financial-pos/{financialPo}', [FinancialPoController::class, 'update'])
             ->whereNumber('financialPo')->name('financial-pos.update');
+        // Mirrored POs (Subscription / License) are read-only apart from their PO
+        // number, which is a local reference and can be corrected on the show page.
+        Route::patch('financial-pos/{financialPo}/po-number', [FinancialPoController::class, 'updatePoNumber'])
+            ->whereNumber('financialPo')->name('financial-pos.po-number.update');
         Route::delete('financial-pos/{financialPo}', [FinancialPoController::class, 'destroy'])
             ->whereNumber('financialPo')->name('financial-pos.destroy');
         Route::post('financial-receipts', [FinancialReceiptController::class, 'storeFromHistory'])
