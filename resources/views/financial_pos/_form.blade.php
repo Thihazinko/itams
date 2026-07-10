@@ -137,10 +137,11 @@
             <div class="input-group">
                 <span class="input-group-text bg-transparent"><i class="bi bi-hash text-muted"></i></span>
                 <input type="text" name="po_number" value="{{ old('po_number', $po->po_number ?? '') }}"
-                       class="form-control @error('po_number') is-invalid @enderror" placeholder="Auto if blank">
+                       class="form-control @error('po_number') is-invalid @enderror"
+                       placeholder="{{ $po ? '' : 'Auto if blank' }}">
                 @error('po_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="form-text">Leave blank to generate automatically.</div>
+            <div class="form-text">{{ $po ? 'Edit to change the PO number — it must stay unique.' : 'Leave blank to generate automatically.' }}</div>
         </div>
     </div>
 
