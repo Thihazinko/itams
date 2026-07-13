@@ -25,21 +25,22 @@ class FinancialPoController extends Controller
         $month = $request->get('month'); // '' / null = whole year
         $month = ($month === null || $month === '') ? null : (int) $month;
 
-        // Per-currency total of renewal costs for the selected period. The figure
-        // is the source Renewal Cost (PO total_amount), grouped by renewal date
-        // (po_date) — so it always equals the Subscription values.
+        // Per-currency total actually paid in the selected period. The figure is
+        // the sum of receipt paid_amount, grouped by each receipt's own currency
+        // and receipt_date — so budget usage reflects money actually spent, in
+        // the month it was paid (matching the Receipts tab filter).
         $periodTotals = [];
         foreach ($currencies as $cur) {
-            $q = FinancialPo::where('currency', $cur)->whereYear('po_date', $year);
+            $q = FinancialReceipt::where('currency', $cur)->whereYear('receipt_date', $year);
             if ($month) {
-                $q->whereMonth('po_date', $month);
+                $q->whereMonth('receipt_date', $month);
             }
-            $periodTotals[$cur] = (float) $q->sum('total_amount');
+            $periodTotals[$cur] = (float) $q->sum('paid_amount');
         }
 
         // Monthly breakdown for the selected year: [month => [currency => total]].
-        $monthlyRows = FinancialPo::whereYear('po_date', $year)
-            ->selectRaw('MONTH(po_date) as m, currency, SUM(total_amount) as total')
+        $monthlyRows = FinancialReceipt::whereYear('receipt_date', $year)
+            ->selectRaw('MONTH(receipt_date) as m, currency, SUM(paid_amount) as total')
             ->groupBy('m', 'currency')
             ->get();
 
@@ -58,11 +59,17 @@ class FinancialPoController extends Controller
             }
         }
 
-        // Years that have any data, for the year selector.
-        $years = FinancialPo::selectRaw('DISTINCT YEAR(po_date) as y')
-            ->orderByDesc('y')
-            ->pluck('y')
+        // Years that have any data, for the year selector — drawn from both PO
+        // dates (PO register) and receipt dates (budget usage), so either tab's
+        // data is reachable from the dropdown.
+        $poYears = FinancialPo::selectRaw('DISTINCT YEAR(po_date) as y')->pluck('y');
+        $receiptYears = FinancialReceipt::selectRaw('DISTINCT YEAR(receipt_date) as y')->pluck('y');
+        $years = $poYears->merge($receiptYears)
             ->map(fn ($y) => (int) $y)
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values()
             ->all();
         if (! in_array($year, $years, true)) {
             $years[] = $year;

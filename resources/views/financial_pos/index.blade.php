@@ -261,7 +261,7 @@
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
     <h6 class="mb-0 d-flex align-items-center gap-2">
         <i class="bi bi-graph-up-arrow text-primary"></i> Budget Usage
-        <span class="text-muted fw-normal small">· {{ $periodLabel }} · renewal cost by renewal date</span>
+        <span class="text-muted fw-normal small">· {{ $periodLabel }} · amount paid by receipt date</span>
     </h6>
     <form method="GET" class="d-flex gap-2 align-items-center">
         <select name="year" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()" title="Year">
