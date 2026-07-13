@@ -57,7 +57,7 @@
         @if($poFilter)
             <span class="text-muted fw-normal small">· for PO <a href="{{ route('financial-pos.show', $poFilter) }}" class="fw-semibold text-decoration-none">{{ $poFilter->po_number }}</a></span>
         @else
-            <span class="text-muted fw-normal small">· receipts of POs dated in {{ $periodLabel }}</span>
+            <span class="text-muted fw-normal small">· receipts dated in {{ $periodLabel }}</span>
         @endif
     </h6>
     <div class="d-flex gap-2 flex-wrap">

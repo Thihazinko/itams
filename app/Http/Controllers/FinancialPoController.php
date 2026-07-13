@@ -100,20 +100,19 @@ class FinancialPoController extends Controller
             ->when($month, fn ($q) => $q->whereMonth('po_date', $month))
             ->count();
 
-        // ---- Receipts tab: history, linked to the same POs as the Approved PO
-        // table. Filtered by each receipt's linked PO date (po_date) and the same
-        // period, so both tabs always show matching POs (the Receipts tab lists
-        // exactly the receipts belonging to the POs in the Approved PO list). ----
-        $poPeriod = function ($q) use ($year, $month) {
-            $q->whereYear('po_date', $year);
+        // ---- Receipts tab: history of recorded payments. Filtered by each
+        // receipt's own receipt_date and the selected period, so a receipt shows
+        // in the month it was actually paid (which may differ from its PO date). ----
+        $receiptPeriod = function ($q) use ($year, $month) {
+            $q->whereYear('receipt_date', $year);
             if ($month) {
-                $q->whereMonth('po_date', $month);
+                $q->whereMonth('receipt_date', $month);
             }
         };
 
         // When arriving from a PO's receipt link (?po=ID), narrow the Receipts tab
         // to just that PO's receipts (across all periods, since a PO's receipts may
-        // fall in any month). Otherwise list receipts of POs dated in the period.
+        // fall in any month). Otherwise list receipts dated in the period.
         $poFilter = null;
         if (($poFilterId = $request->get('po')) && ctype_digit((string) $poFilterId)) {
             $poFilter = FinancialPo::find($poFilterId);
@@ -126,8 +125,8 @@ class FinancialPoController extends Controller
             $receiptsQuery->where('financial_po_id', $poFilter->id);
             $receiptCountQuery->where('financial_po_id', $poFilter->id);
         } else {
-            $receiptsQuery->whereHas('financialPo', $poPeriod);
-            $receiptCountQuery->whereHas('financialPo', $poPeriod);
+            $receiptPeriod($receiptsQuery);
+            $receiptPeriod($receiptCountQuery);
         }
 
         if ($rsearch = $request->get('rsearch')) {
