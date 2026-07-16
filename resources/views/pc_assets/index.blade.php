@@ -77,7 +77,7 @@
             <i class="bi bi-upload"></i> Import
         </button>
         @endif
-        @if($isAdmin)
+        @if($canEdit)
         <a href="{{ route('pc-assets.create') }}" class="quick-action quick-action-primary">
             <i class="bi bi-plus-circle"></i> Add PC
         </a>
@@ -300,7 +300,7 @@
     <form id="pcBulkForm" action="{{ route('pc-assets.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
-        @if($isAdmin)
+        @if($canEdit)
         <div id="pcBulkToolbar" class="card mb-2 d-none">
             <div class="card-body py-2 d-flex justify-content-between align-items-center">
                 <span class="small">
@@ -322,7 +322,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            @if($isAdmin)
+                            @if($canEdit)
                                 <th style="width: 38px;">
                                     <input type="checkbox" id="pcSelectAll" class="form-check-input" title="Select all on page">
                                 </th>
@@ -354,7 +354,7 @@
                     <tbody>
                         @forelse($assets as $i => $asset)
                             <tr>
-                                @if($isAdmin)
+                                @if($canEdit)
                                     <td>
                                         <input type="checkbox" name="ids[]" value="{{ $asset->id }}" class="form-check-input pc-row-check">
                                     </td>
@@ -415,7 +415,7 @@
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('pc-assets.show', $asset) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('pc-assets.edit', $asset) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
-                                    @if($isAdmin)
+                                    @if($canEdit)
                                     @php
                                         $pcDetail = trim(collect([
                                             trim(($asset->brand ?? '') . ' ' . ($asset->model ?? '')),
@@ -433,14 +433,14 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 23 : 22 }}" class="text-center py-5">
+                                <td colspan="{{ $canEdit ? 23 : 22 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No PC assets found</div>
                                         <div class="small">
                                             @if(request()->hasAny(['search','status','department']))
                                                 Try clearing the filters or <a href="{{ route('pc-assets.index') }}">view all</a>.
-                                            @elseif($isAdmin)
+                                            @elseif($canEdit)
                                                 <a href="{{ route('pc-assets.create') }}">Add the first PC</a> to get started.
                                             @else
                                                 No records have been added yet.
@@ -456,7 +456,7 @@
         </div>
     </form>
 
-    @if($isAdmin)
+    @if($canEdit)
     <form id="pcSingleDeleteForm" method="POST" class="d-none">
         @csrf @method('DELETE')
     </form>

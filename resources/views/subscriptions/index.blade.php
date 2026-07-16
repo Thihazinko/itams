@@ -54,7 +54,7 @@
             <i class="bi bi-upload"></i> Import
         </button>
         @endif
-        @if($isAdmin)
+        @if($canEdit)
         <a href="{{ route('subscriptions.create') }}" class="quick-action quick-action-primary">
             <i class="bi bi-plus-circle"></i> Add Subscription
         </a>
@@ -289,7 +289,7 @@
     <form id="subBulkForm" action="{{ route('subscriptions.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
-        @if($isAdmin)
+        @if($canEdit)
         <div id="subBulkToolbar" class="card mb-2 d-none">
             <div class="card-body py-2 d-flex justify-content-between align-items-center">
                 <span class="small">
@@ -311,7 +311,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            @if($isAdmin)
+                            @if($canEdit)
                                 <th style="width: 38px;">
                                     <input type="checkbox" id="subSelectAll" class="form-check-input" title="Select all on page">
                                 </th>
@@ -365,7 +365,7 @@
                                 }
                             @endphp
                             <tr>
-                                @if($isAdmin)
+                                @if($canEdit)
                                     <td>
                                         <input type="checkbox" name="ids[]" value="{{ $sub->id }}" class="form-check-input sub-row-check">
                                     </td>
@@ -489,7 +489,7 @@
                                     @endif
                                     <a href="{{ route('subscriptions.show', $sub) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('subscriptions.edit', $sub) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
-                                    @if($isAdmin)
+                                    @if($canEdit)
                                     <button type="button" class="btn-icon-soft text-danger sub-delete-single"
                                             title="Delete" aria-label="Delete"
                                             data-id="{{ $sub->id }}"
@@ -500,14 +500,14 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 16 : 15 }}" class="text-center py-5">
+                                <td colspan="{{ $canEdit ? 16 : 15 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No subscriptions found</div>
                                         <div class="small">
                                             @if(request()->hasAny(['search','service_type','renewal_status','expiring_soon']))
                                                 Try clearing the filters or <a href="{{ route('subscriptions.index') }}">view all</a>.
-                                            @elseif($isAdmin)
+                                            @elseif($canEdit)
                                                 <a href="{{ route('subscriptions.create') }}">Add the first subscription</a> to get started.
                                             @else
                                                 No records have been added yet.
@@ -527,11 +527,15 @@
     <form id="subFinalConfirmForm" method="POST" class="d-none">
         @csrf
     </form>
+    @endif
 
+    @if($canEdit)
     <form id="subSingleDeleteForm" method="POST" class="d-none">
         @csrf @method('DELETE')
     </form>
+    @endif
 
+    @if($isAdmin)
     {{-- Renew Subscription modal --}}
     <div class="modal fade" id="subRenewPoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">

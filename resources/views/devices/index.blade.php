@@ -66,7 +66,7 @@
             <i class="bi bi-upload"></i> Import
         </button>
         @endif
-        @if($isAdmin)
+        @if($canEdit)
         <a href="{{ route('devices.create') }}" class="quick-action quick-action-primary">
             <i class="bi bi-plus-circle"></i> Add Device
         </a>
@@ -286,7 +286,7 @@
     <form id="deviceBulkForm" action="{{ route('devices.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
-        @if($isAdmin)
+        @if($canEdit)
         <div id="deviceBulkToolbar" class="card mb-2 d-none">
             <div class="card-body py-2 d-flex justify-content-between align-items-center">
                 <span class="small">
@@ -308,7 +308,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            @if($isAdmin)
+                            @if($canEdit)
                                 <th style="width: 38px;">
                                     <input type="checkbox" id="deviceSelectAll" class="form-check-input" title="Select all on page">
                                 </th>
@@ -332,7 +332,7 @@
                     <tbody>
                         @forelse($devices as $i => $device)
                             <tr>
-                                @if($isAdmin)
+                                @if($canEdit)
                                     <td>
                                         <input type="checkbox" name="ids[]" value="{{ $device->id }}" class="form-check-input device-row-check">
                                     </td>
@@ -380,7 +380,7 @@
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('devices.show', $device) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('devices.edit', $device) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
-                                    @if($isAdmin)
+                                    @if($canEdit)
                                     @php
                                         $dvParts = [];
                                         if ($device->vendor)         $dvParts[] = $device->vendor;
@@ -398,14 +398,14 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 15 : 14 }}" class="text-center py-5">
+                                <td colspan="{{ $canEdit ? 15 : 14 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No devices found</div>
                                         <div class="small">
                                             @if(request()->hasAny(['search','status']))
                                                 Try clearing the filters or <a href="{{ route('devices.index') }}">view all</a>.
-                                            @elseif($isAdmin)
+                                            @elseif($canEdit)
                                                 <a href="{{ route('devices.create') }}">Add the first device</a> to get started.
                                             @else
                                                 No records have been added yet.
@@ -421,7 +421,7 @@
         </div>
     </form>
 
-    @if($isAdmin)
+    @if($canEdit)
     <form id="deviceSingleDeleteForm" method="POST" class="d-none">
         @csrf @method('DELETE')
     </form>

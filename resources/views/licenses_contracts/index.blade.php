@@ -57,7 +57,7 @@
             <i class="bi bi-upload"></i> Import
         </button>
         @endif
-        @if($isAdmin)
+        @if($canEdit)
         <a href="{{ route('licenses-contracts.create') }}" class="quick-action quick-action-primary">
             <i class="bi bi-plus-circle"></i> Add License/Contract
         </a>
@@ -275,7 +275,7 @@
     <form id="lcBulkForm" action="{{ route('licenses-contracts.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
-        @if($isAdmin)
+        @if($canEdit)
         <div id="lcBulkToolbar" class="card mb-2 d-none">
             <div class="card-body py-2 d-flex justify-content-between align-items-center">
                 <span class="small">
@@ -297,7 +297,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            @if($isAdmin)
+                            @if($canEdit)
                                 <th style="width: 38px;">
                                     <input type="checkbox" id="lcSelectAll" class="form-check-input" title="Select all on page">
                                 </th>
@@ -348,7 +348,7 @@
                                 }
                             @endphp
                             <tr>
-                                @if($isAdmin)
+                                @if($canEdit)
                                     <td>
                                         <input type="checkbox" name="ids[]" value="{{ $item->id }}" class="form-check-input lc-row-check">
                                     </td>
@@ -418,7 +418,7 @@
                                 <td class="text-end text-nowrap pe-3">
                                     <a href="{{ route('licenses-contracts.show', $item) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('licenses-contracts.edit', $item) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
-                                    @if($isAdmin)
+                                    @if($canEdit)
                                     @php
                                         $lcParts = [];
                                         if ($item->vendor_name) $lcParts[] = $item->vendor_name;
@@ -435,14 +435,14 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $isAdmin ? 14 : 13 }}" class="text-center py-5">
+                                <td colspan="{{ $canEdit ? 14 : 13 }}" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                         <div class="fw-semibold">No licenses or contracts found</div>
                                         <div class="small">
                                             @if(request()->hasAny(['search','status','expiring_soon','overdue']))
                                                 Try clearing the filters or <a href="{{ route('licenses-contracts.index') }}">view all</a>.
-                                            @elseif($isAdmin)
+                                            @elseif($canEdit)
                                                 <a href="{{ route('licenses-contracts.create') }}">Add the first license/contract</a> to get started.
                                             @else
                                                 No records have been added yet.
@@ -458,7 +458,7 @@
         </div>
     </form>
 
-    @if($isAdmin)
+    @if($canEdit)
     <form id="lcSingleDeleteForm" method="POST" class="d-none">
         @csrf @method('DELETE')
     </form>
