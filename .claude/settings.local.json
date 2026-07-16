@@ -243,7 +243,10 @@
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\summary_smoke.php\")",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\render_summary.php\")",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\perm_check.php\")",
-      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\verify_daily.php\")"
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\verify_daily.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\check_index.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan migrate --force 2>&1 | Select-Object -Last 4)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\verify_po.php\")"
     ]
   }
 }
