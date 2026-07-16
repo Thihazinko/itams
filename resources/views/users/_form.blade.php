@@ -11,6 +11,8 @@
         'email_master'       => 'bi-envelope-at',
         'financial_management' => 'bi-cash-coin',
         'gcp_costs'          => 'bi-cloud',
+        'task_daily'         => 'bi-calendar-check',
+        'task_management'    => 'bi-list-check',
     ];
 @endphp
 

@@ -223,7 +223,27 @@
       "Bash(grep -o \"financial_pos[\\\\\\\\/][a-z_]*\\\\.blade\\\\.php\" /c/xampp/htdocs/infra-ninja/storage/framework/views/1153c0272b45a2ffeac43ab0a3486add.php)",
       "Bash(grep -vE \"\\\\\\(float\\\\\\)|number_format|name=\\\\\"\\(discount|tax\\)_amount\\\\\"|isset\\\\\\(|=> \\\\\\\\\\\\$|'\\(discount|tax\\)_amount'\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(tasklist)",
+      "Bash(mkdir -p _innodb_backup_20260714)",
+      "Bash(cp -p ib_logfile0 ib_logfile1 ibdata1 _innodb_backup_20260714/)",
+      "Bash(cd *)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root -e \"SELECT VERSION\\(\\); SHOW ENGINES;\")",
+      "Bash(/c/xampp/mysql/bin/mysql.exe *)",
+      "Bash(awk '{print $1\"\\\\t\"$2}')",
+      "Bash(mv /c/xampp/mysql/data/_innodb_backup_20260714 /c/xampp/mysql/_innodb_backup_20260714)",
+      "Read(//c/xampp/mysql/**)",
+      "Bash(grep -v \"^$\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Http\\\\Controllers\\\\TaskManagementController.php; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan route:list --name=task-management.monthly)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:cache 2>&1 | Select-Object -Last 5; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan migrate --force 2>&1 | Select-Object -Last 6)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\export_smoke.php\" 2>&1 | Select-Object -Last 8)",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\export_smoke.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe -l C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\app\\\\Exports\\\\TaskMonthlyMemberSheet.php; & C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\export_smoke2.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\summary_smoke.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\render_summary.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\perm_check.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\9a5acdc3-5e38-472a-b76c-1232c7e2ea90\\\\scratchpad\\\\verify_daily.php\")"
     ]
   }
 }

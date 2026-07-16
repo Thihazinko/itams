@@ -1101,6 +1101,26 @@
             @endif
             @endif
 
+            @if($user->canAccess('task_daily') || $user->canAccess('task_management'))
+            <div class="nav-section">Task Management</div>
+            @if($user->canAccess('task_daily'))
+            <a href="{{ route('task-management.index') }}" class="{{ request()->routeIs('task-management.index') ? 'active' : '' }}" title="Daily Task">
+                <i class="bi bi-calendar-check"></i> Daily Task
+            </a>
+            @endif
+            @if($user->canAccess('task_management'))
+            <a href="{{ route('task-management.monthly') }}" class="{{ request()->routeIs('task-management.monthly') ? 'active' : '' }}" title="Monthly List">
+                <i class="bi bi-list-check"></i> Monthly List
+            </a>
+            <a href="{{ route('task-management.summary') }}" class="{{ request()->routeIs('task-management.summary') ? 'active' : '' }}" title="Monthly Summary">
+                <i class="bi bi-bar-chart-line"></i> Monthly Summary
+            </a>
+            <a href="{{ route('task-management.tasks') }}" class="{{ request()->routeIs('task-management.tasks') || request()->routeIs('task-categories.*') || request()->routeIs('task-items.*') ? 'active' : '' }}" title="Manage Tasks">
+                <i class="bi bi-list-task"></i> Manage Tasks
+            </a>
+            @endif
+            @endif
+
             @if($user->isAdmin())
             <div class="nav-section">Setting</div>
             <a href="{{ route('purchase-orders.index') }}" class="{{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" title="Renewal Process">

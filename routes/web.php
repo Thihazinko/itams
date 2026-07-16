@@ -19,6 +19,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepairLogController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionRenewalController;
+use App\Http\Controllers\TaskCategoryController;
+use App\Http\Controllers\TaskItemController;
+use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -233,6 +236,39 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('gcpCost')->name('gcp-costs.update');
         Route::delete('gcp-costs/{gcpCost}', [GcpCostBreakdownController::class, 'destroy'])
             ->whereNumber('gcpCost')->name('gcp-costs.destroy');
+    });
+
+    // Daily Task — a member logs their own hours. A narrower permission than full
+    // Task Management (which implies it), so a user can be granted Daily Task alone.
+    Route::middleware('module:task_daily,view')->group(function () {
+        Route::get('task-management', [TaskManagementController::class, 'index'])->name('task-management.index');
+        Route::get('task-management/export', [TaskManagementController::class, 'export'])->name('task-management.export');
+    });
+    Route::middleware('module:task_daily,edit')->group(function () {
+        Route::post('task-management/save', [TaskManagementController::class, 'save'])->name('task-management.save');
+    });
+
+    // Task Management — monthly reports (Plan vs Achievement, per member, organised
+    // by Category → Task) and the task/category reference-data setup.
+    Route::middleware('module:task_management,view')->group(function () {
+        Route::get('task-management/monthly', [TaskManagementController::class, 'monthly'])->name('task-management.monthly');
+        Route::get('task-management/summary/export', [TaskManagementController::class, 'exportSummary'])->name('task-management.summary.export');
+        Route::get('task-management/summary', [TaskManagementController::class, 'summary'])->name('task-management.summary');
+        Route::get('task-management/tasks', [TaskManagementController::class, 'tasks'])->name('task-management.tasks');
+    });
+    Route::middleware('module:task_management,edit')->group(function () {
+        // Reference data — categories and their tasks.
+        Route::post('task-management/categories', [TaskCategoryController::class, 'store'])->name('task-categories.store');
+        Route::put('task-management/categories/{taskCategory}', [TaskCategoryController::class, 'update'])
+            ->whereNumber('taskCategory')->name('task-categories.update');
+        Route::delete('task-management/categories/{taskCategory}', [TaskCategoryController::class, 'destroy'])
+            ->whereNumber('taskCategory')->name('task-categories.destroy');
+
+        Route::post('task-management/tasks', [TaskItemController::class, 'store'])->name('task-items.store');
+        Route::put('task-management/tasks/{taskItem}', [TaskItemController::class, 'update'])
+            ->whereNumber('taskItem')->name('task-items.update');
+        Route::delete('task-management/tasks/{taskItem}', [TaskItemController::class, 'destroy'])
+            ->whereNumber('taskItem')->name('task-items.destroy');
     });
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
