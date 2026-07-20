@@ -242,13 +242,22 @@
             data = data || {};
             const i = idx++;
             const tr = document.createElement('tr');
+            // Editable: two time pickers. Read-only: clean 24h text + hours badge —
+            // avoids disabled pickers rendering locale AM/PM that overflows the box.
+            const timeInput = field =>
+                `<input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" ` +
+                `pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" name="slots[${i}][${field}]" ` +
+                `class="form-control form-control-sm slot-time text-center" style="width:70px">`;
+            const hoursCell = canEdit
+                ? '<td><div class="d-flex align-items-center gap-1">' +
+                    timeInput('start_time') +
+                    '<span class="text-muted small">to</span>' +
+                    timeInput('end_time') +
+                  '</div></td>'
+                : '<td class="slot-readonly text-nowrap"></td>';
             tr.innerHTML =
                 '<td class="text-center text-muted row-no"></td>' +
-                '<td><div class="d-flex align-items-center gap-1">' +
-                    `<input type="time" lang="en-GB" name="slots[${i}][start_time]" class="form-control form-control-sm slot-time" style="width:92px" ${dis}>` +
-                    '<span class="text-muted small">to</span>' +
-                    `<input type="time" lang="en-GB" name="slots[${i}][end_time]" class="form-control form-control-sm slot-time" style="width:92px" ${dis}>` +
-                '</div></td>' +
+                hoursCell +
                 `<td><select name="slots[${i}][task_category_id]" class="form-select form-select-sm cat-select" ${dis}></select></td>` +
                 `<td><select name="slots[${i}][task_item_id]" class="form-select form-select-sm task-select" ${dis}></select></td>` +
                 `<td><input type="text" name="slots[${i}][project_name]" class="form-control form-control-sm" maxlength="255" ${dis}></td>` +
@@ -268,8 +277,19 @@
             addOptions(q('[name$="[work_type]"]'), [{ value: '', label: '—' }].concat(workTypes.map(v => ({ value: v, label: v }))));
             addOptions(q('[name$="[study_type]"]'), [{ value: '', label: '—' }].concat(studyTypes.map(v => ({ value: v, label: v }))));
             // Values
-            q('[name$="[start_time]"]').value = data.start_time || '';
-            q('[name$="[end_time]"]').value   = data.end_time || '';
+            const start = data.start_time || '', end = data.end_time || '';
+            if (canEdit) {
+                q('[name$="[start_time]"]').value = start;
+                q('[name$="[end_time]"]').value   = end;
+            } else {
+                const hrs = spanHours(start, end);
+                tr.dataset.hours = hrs;
+                const span = (start || end)
+                    ? `${start || '—'} <span class="text-muted">to</span> ${end || '—'}`
+                    : '<span class="text-muted">—</span>';
+                q('.slot-readonly').innerHTML =
+                    `${span} <span class="badge rounded-pill text-bg-light border ms-1">${fmtHM(hrs)}</span>`;
+            }
             q('[name$="[project_name]"]').value = data.project_name || '';
             q('[name$="[expense_name]"]').value = data.expense_name || '';
             q('[name$="[work_type]"]').value  = data.work_type || '';
@@ -284,13 +304,33 @@
             const m = /^(\d{1,2}):(\d{2})/.exec(v || '');
             return m ? (+m[1]) * 60 + (+m[2]) : null;
         }
-        function durationFor(tr) {
-            const t = tr.querySelectorAll('.slot-time');
-            if (t.length < 2) return 1;
-            const s = toMin(t[0].value), e = toMin(t[1].value);
+        function spanHours(start, end) {
+            const s = toMin(start), e = toMin(end);
             if (s === null || e === null) return 1;
             const d = (e - s) / 60;
             return d > 0 ? d : 1;
+        }
+        // Decimal hours -> "Xh Ym" (e.g. 8.25 -> "8h 15m") so 15/30-min spans read true.
+        function fmtHM(hours) {
+            const totalMin = Math.round(hours * 60);
+            if (totalMin === 0) return '0h';
+            const h = Math.floor(totalMin / 60), m = totalMin % 60;
+            if (h && m) return `${h}h ${m}m`;
+            return h ? `${h}h` : `${m}m`;
+        }
+        // Keep the text field a clean 24-hour HH:MM as the user types.
+        function maskTime(el) {
+            let d = el.value.replace(/\D/g, '').slice(0, 4);
+            let hh = d.slice(0, 2), mm = d.slice(2, 4);
+            if (hh.length === 2 && +hh > 23) hh = '23';
+            if (mm.length === 2 && +mm > 59) mm = '59';
+            el.value = (mm.length || d.length > 2) ? hh + ':' + mm : hh;
+        }
+        function durationFor(tr) {
+            const t = tr.querySelectorAll('.slot-time');
+            if (t.length >= 2) return spanHours(t[0].value, t[1].value);
+            // Read-only rows have no inputs; use the span computed at build time.
+            return parseFloat(tr.dataset.hours) || 1;
         }
         function renumber() {
             body.querySelectorAll('tr').forEach((tr, n) => { tr.querySelector('.row-no').textContent = n + 1; });
@@ -301,7 +341,7 @@
                 const cat = tr.querySelector('.cat-select');
                 if (cat && cat.value) total += durationFor(tr);
             });
-            document.getElementById('dayTotal').textContent = (Math.round(total * 100) / 100).toString();
+            document.getElementById('dayTotal').textContent = fmtHM(total);
         }
 
         // Delegated events
@@ -309,7 +349,7 @@
             if (e.target.matches('.cat-select')) { fillTasks(e.target); recalcTotal(); }
         });
         form.addEventListener('input', e => {
-            if (e.target.matches('.slot-time')) recalcTotal();
+            if (e.target.matches('.slot-time')) { maskTime(e.target); recalcTotal(); }
         });
         body.addEventListener('click', e => {
             const btn = e.target.closest('.row-remove');
