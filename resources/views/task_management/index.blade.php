@@ -26,6 +26,9 @@
         </div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="quick-action" data-bs-toggle="modal" data-bs-target="#mailModal" title="Generate the daily report email text">
+            <i class="bi bi-envelope-paper"></i> Mail Format
+        </button>
         <div class="dropdown">
             <button type="button" class="quick-action dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-download"></i> Export {{ $date->format('M Y') }}
@@ -165,6 +168,40 @@
     </div>
 </form>
 
+{{-- Daily report mail — a ready-to-paste text in the mailsample.txt format,
+     built from this day's rows (Today's Work + Working Time + progress list). --}}
+<div class="modal fade" id="mailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-envelope-paper"></i> Daily Report Mail — {{ $target->name }}, {{ $date->format('j M Y') }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1">問題 : Problems</label>
+                        <input type="text" id="mailProblems" class="form-control form-control-sm" value="なし">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1">明日予定 : Tomorrow Plan</label>
+                        <input type="text" id="mailTomorrow" class="form-control form-control-sm" placeholder="Tomorrow's plan…">
+                    </div>
+                </div>
+                <label class="form-label small text-muted mb-1">Mail text — edit if needed, then copy</label>
+                <textarea id="mailText" class="form-control font-monospace" rows="22" spellcheck="false" style="font-size:.82rem;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <span id="mailCopied" class="text-success small me-auto" style="display:none;"><i class="bi bi-check2-circle"></i> Copied to clipboard</span>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="mailCopyBtn"><i class="bi bi-clipboard"></i> Copy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .daily-sheet td, .daily-sheet th { vertical-align: middle; }
 
@@ -278,6 +315,8 @@
             addOptions(q('[name$="[study_type]"]'), [{ value: '', label: '—' }].concat(studyTypes.map(v => ({ value: v, label: v }))));
             // Values
             const start = data.start_time || '', end = data.end_time || '';
+            tr.dataset.start = start;
+            tr.dataset.end   = end;
             if (canEdit) {
                 q('[name$="[start_time]"]').value = start;
                 q('[name$="[end_time]"]').value   = end;
@@ -362,6 +401,103 @@
         (initialRows.length ? initialRows : [{}]).forEach(r => buildRow(r));
         renumber();
         recalcTotal();
+
+        // --- Daily report mail (mailsample.txt format) -------------------------
+        const mailName = @json($target->name);
+        const mailDate = @json($date->format('d-m-Y'));
+
+        // One filled row -> its time span + a human label (detail, else task, else category).
+        function rowInfo(tr) {
+            const cat = tr.querySelector('.cat-select');
+            if (!cat || !cat.value) return null; // only rows with a category count, as in the total
+
+            const times = tr.querySelectorAll('.slot-time');
+            const start = times.length >= 2 ? times[0].value : (tr.dataset.start || '');
+            const end   = times.length >= 2 ? times[1].value : (tr.dataset.end || '');
+
+            const detail   = (tr.querySelector('[name$="[task_detail]"]')?.value || '').trim();
+            const taskSel  = tr.querySelector('.task-select');
+            const taskName = taskSel && taskSel.value ? taskSel.options[taskSel.selectedIndex].text.trim() : '';
+            const catName  = cat.options[cat.selectedIndex].text.trim();
+
+            return { start, end, content: detail || taskName || catName };
+        }
+
+        function pad2(n) { return String(n).padStart(2, '0'); }
+        function minToHM(m) { return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); }
+
+        function buildMail() {
+            const rows = [];
+            body.querySelectorAll('tr').forEach(tr => { const r = rowInfo(tr); if (r) rows.push(r); });
+
+            // Overall working window: earliest start to latest end.
+            let minStart = null, maxEnd = null;
+            rows.forEach(r => {
+                const s = toMin(r.start), e = toMin(r.end);
+                if (s !== null && (minStart === null || s < minStart)) minStart = s;
+                if (e !== null && (maxEnd   === null || e > maxEnd))   maxEnd = e;
+            });
+            const working = (minStart !== null && maxEnd !== null) ? `${minToHM(minStart)}-${minToHM(maxEnd)}` : '';
+
+            // Today's Work — one line per row, exactly the hours & task from the sheet.
+            const workLines = rows.map(r => {
+                const span = (r.start && r.end) ? `${r.start} - ${r.end}` : '';
+                return `${span}【 ${r.content} 】`;
+            });
+
+            // Work progress — each distinct task once, defaulting to 100% / 100%.
+            const seen = new Set(), progress = [];
+            rows.forEach(r => {
+                if (seen.has(r.content)) return;
+                seen.add(r.content);
+                progress.push(`${r.content} => 単日： 100% / 累計：100%`);
+            });
+
+            const problems = (document.getElementById('mailProblems').value || '').trim() || 'なし';
+            const tomorrow = (document.getElementById('mailTomorrow').value || '').trim();
+
+            const lines = [
+                `Mail Subject: 日報【${mailDate}】`, '',
+                'Dear Superiors,', '',
+                'お疲れ様です。',
+                `${mailName} です。`, '',
+                `本日(${mailDate})作業に関して、報告致します。`, '',
+                "【 本日の作業時間 : Today's Working Time 】", '',
+                working, '',
+                "【 本日の作業内容 : Today's Work 】",
+                ...workLines, '',
+                '【 問題 : Problems 】',
+                problems, '',
+                '【 作業進捗％ : Work progress % 】',
+                ...progress, '',
+                '【明日予定 : Tomorrow Plan】', '',
+                tomorrow, '',
+                '以上です',
+            ];
+
+            document.getElementById('mailText').value = lines.join('\n');
+        }
+
+        const mailModal = document.getElementById('mailModal');
+        if (mailModal) {
+            // Rebuild each time it opens so it reflects the latest (even unsaved) rows.
+            mailModal.addEventListener('shown.bs.modal', buildMail);
+            ['mailProblems', 'mailTomorrow'].forEach(id =>
+                document.getElementById(id).addEventListener('input', buildMail));
+
+            document.getElementById('mailCopyBtn').addEventListener('click', async () => {
+                const ta = document.getElementById('mailText');
+                try {
+                    await navigator.clipboard.writeText(ta.value);
+                } catch (e) {
+                    ta.select();
+                    document.execCommand('copy');
+                }
+                const note = document.getElementById('mailCopied');
+                note.style.display = '';
+                setTimeout(() => { note.style.display = 'none'; }, 2000);
+            });
+        }
     })();
 </script>
 @endsection
