@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class LicenseContract extends Model
 {
@@ -39,6 +40,22 @@ class LicenseContract extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(LicenseContractAttachment::class)->latest();
+    }
+
+    /**
+     * Clean up attachment files when the record is deleted. The database
+     * cascade removes the attachment rows, but a FK cascade doesn't fire model
+     * events — so the stored files would be orphaned unless we delete them here.
+     * Runs for both single and bulk deletes (each calls delete() per model).
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (LicenseContract $license) {
+            $paths = $license->attachments()->pluck('file_path')->filter()->all();
+            if ($paths) {
+                Storage::disk('public')->delete($paths);
+            }
+        });
     }
 
     /**
