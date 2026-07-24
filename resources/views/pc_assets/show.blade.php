@@ -22,10 +22,43 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('pc-assets.edit', $asset) }}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit</a>
-        <a href="{{ route('pc-assets.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+        @unless($asset->trashed())
+            <a href="{{ route('pc-assets.edit', $asset) }}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit</a>
+        @endunless
+        <a href="{{ route('pc-assets.index', $asset->trashed() ? ['view' => 'disposed'] : []) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
     </div>
 </div>
+
+@if($asset->trashed())
+<div class="card border-warning mb-3">
+    <div class="card-header bg-warning-subtle d-flex align-items-center gap-2">
+        <i class="bi bi-archive text-warning-emphasis"></i>
+        <strong>Disposed / Retired</strong>
+        <span class="text-muted small ms-auto">Removed from the active fleet — record kept for history.</span>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0 g-2">
+            <dt class="col-sm-3 text-muted">Retired / Removed date</dt>
+            <dd class="col-sm-9">{{ $asset->retired_date?->format('Y-m-d') ?? '—' }}</dd>
+
+            <dt class="col-sm-3 text-muted">Budget year</dt>
+            <dd class="col-sm-9">{{ $asset->budget_year ?: '—' }}</dd>
+
+            <dt class="col-sm-3 text-muted">Disposal method</dt>
+            <dd class="col-sm-9">{{ $asset->disposal_method ?: '—' }}</dd>
+
+            <dt class="col-sm-3 text-muted">Reason</dt>
+            <dd class="col-sm-9" style="white-space: pre-line;">{{ $asset->disposal_reason ?: '—' }}</dd>
+
+            <dt class="col-sm-3 text-muted">Disposed by</dt>
+            <dd class="col-sm-9">{{ $asset->disposed_by ?: '—' }}</dd>
+
+            <dt class="col-sm-3 text-muted">Approved by</dt>
+            <dd class="col-sm-9">{{ $asset->approved_by ?: '—' }}</dd>
+        </dl>
+    </div>
+</div>
+@endif
 
 <div class="row g-3">
     <div class="col-lg-8">

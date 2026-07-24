@@ -5,13 +5,21 @@ namespace App\Models;
 use App\Casts\SafeEncrypted;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 class PcAsset extends Model
 {
+    use SoftDeletes;
+
     public const DEPARTMENTS = [
         'Admin', 'Finance', 'HR', 'IT Development', 'Contract',
         'Offshore', 'SST', 'BPO', 'Infra', 'Sale',
+    ];
+
+    // Disposal methods offered when an office admin removes a PC at budget year.
+    public const DISPOSAL_METHODS = [
+        'Scrapped', 'Sold', 'Donated', 'Returned to Vendor', 'Other',
     ];
 
     protected $fillable = [
@@ -20,10 +28,13 @@ class PcAsset extends Model
         'hdd', 'display', 'operating_system', 'license_key', 'admin_password',
         'username', 'password', 'purchased_date', 'expire_date', 'expire_permanent',
         'warranty_period', 'remarks', 'modified_by',
+        'retired_date', 'budget_year', 'disposal_method', 'disposal_reason',
+        'disposed_by', 'approved_by',
     ];
 
     protected $casts = [
         'purchased_date' => 'date',
+        'retired_date' => 'date',
         'expire_date' => 'date',
         'expire_permanent' => 'boolean',
         // SafeEncrypted decrypts like the built-in "encrypted" cast but returns

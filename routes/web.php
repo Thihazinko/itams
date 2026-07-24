@@ -56,12 +56,18 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:pc_assets,edit')->group(function () {
         Route::post('pc-assets/import', [PcAssetController::class, 'import'])->name('pc-assets.import');
         Route::delete('pc-assets/bulk', [PcAssetController::class, 'bulkDestroy'])->name('pc-assets.bulk-destroy');
+        // Budget-year disposal: archive a PC with disposal details, restore it,
+        // or permanently remove an already-archived record.
+        Route::post('pc-assets/{pcAsset}/dispose', [PcAssetController::class, 'dispose'])->name('pc-assets.dispose');
+        Route::post('pc-assets/{id}/restore', [PcAssetController::class, 'restore'])->name('pc-assets.restore');
+        Route::delete('pc-assets/{id}/force', [PcAssetController::class, 'forceDestroy'])->name('pc-assets.force-destroy');
         Route::resource('pc-assets', PcAssetController::class)->except(['index', 'show']);
     });
     Route::middleware('module:pc_assets,view')->group(function () {
         Route::get('pc-assets/export', [PcAssetController::class, 'export'])->name('pc-assets.export');
         Route::get('pc-assets/template', [PcAssetController::class, 'template'])->name('pc-assets.template');
-        Route::resource('pc-assets', PcAssetController::class)->only(['index', 'show']);
+        // withTrashed on show so a disposed (archived) PC can still be viewed.
+        Route::resource('pc-assets', PcAssetController::class)->only(['index', 'show'])->withTrashed(['show']);
     });
 
     // PC Master — Repair Logs tab (shares the pc_assets module permission)

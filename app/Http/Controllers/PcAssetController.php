@@ -16,7 +16,10 @@ class PcAssetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PcAsset::query();
+        // "Disposed" view lists the archived (soft-deleted) PCs — the ones the
+        // office admin team removed at budget year — instead of the live fleet.
+        $view = $request->get('view') === 'disposed' ? 'disposed' : 'active';
+        $query = $view === 'disposed' ? PcAsset::onlyTrashed() : PcAsset::query();
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -54,7 +57,27 @@ class PcAssetController extends Controller
             $query->whereIn('status', ['Damage', 'Retirement', 'Low Performance']);
         }
 
-        $assets = $query->orderBy('computer_id')->paginate(20)->withQueryString();
+        // Budget-year filter + dropdown options — only meaningful on the
+        // Disposed view, where every row carries a budget year.
+        $budgetYears = [];
+        if ($view === 'disposed') {
+            $budgetYears = PcAsset::onlyTrashed()
+                ->whereNotNull('budget_year')
+                ->where('budget_year', '!=', '')
+                ->distinct()
+                ->orderByDesc('budget_year')
+                ->pluck('budget_year')
+                ->all();
+
+            if ($budgetYear = $request->get('budget_year')) {
+                $query->where('budget_year', $budgetYear);
+            }
+        }
+
+        $assets = ($view === 'disposed'
+            ? $query->orderByDesc('retired_date')
+            : $query->orderBy('computer_id'))
+            ->paginate(20)->withQueryString();
 
         $recentLogs = ActivityLog::where(function ($q) {
                 $q->where('subject_type', PcAsset::class)
@@ -67,7 +90,7 @@ class PcAssetController extends Controller
             ->limit(8)
             ->get();
 
-        return view('pc_assets.index', compact('assets', 'statusCounts', 'departmentCounts', 'recentLogs'));
+        return view('pc_assets.index', compact('assets', 'statusCounts', 'departmentCounts', 'recentLogs', 'view', 'budgetYears'));
     }
 
     public function create()
@@ -149,9 +172,95 @@ class PcAssetController extends Controller
             subject: $pcAsset,
         );
 
-        $pcAsset->delete();
+        // Permanent removal (e.g. a mistaken entry). Budget-year retirement uses
+        // dispose() instead, which archives the record with disposal details.
+        $pcAsset->forceDelete();
 
         return redirect()->route('pc-assets.index')->with('success', 'PC Asset deleted.');
+    }
+
+    /**
+     * Archive a PC as disposed/retired — the office admin team's budget-year
+     * removal. The record is soft-deleted (hidden from the active list) but
+     * kept, with the disposal details, and reachable under the Disposed view.
+     */
+    public function dispose(Request $request, PcAsset $pcAsset)
+    {
+        $data = $request->validate([
+            'retired_date'    => 'required|date',
+            'budget_year'     => 'nullable|string|max:255',
+            'disposal_method' => ['nullable', \Illuminate\Validation\Rule::in(PcAsset::DISPOSAL_METHODS)],
+            'disposal_reason' => 'nullable|string',
+            'disposed_by'     => 'nullable|string|max:255',
+            'approved_by'     => 'nullable|string|max:255',
+        ]);
+
+        $data['status'] = 'Retirement';
+        $data['modified_by'] = $request->user()->name;
+        $data['disposed_by'] = $data['disposed_by'] ?: $request->user()->name;
+
+        DB::transaction(function () use ($pcAsset, $data) {
+            $pcAsset->update($data);
+            $pcAsset->delete(); // soft delete → archived
+        });
+
+        ActivityLogger::log(
+            action: 'disposed',
+            description: "Disposed PC asset {$pcAsset->computer_id} ({$pcAsset->hostname})"
+                . ($data['budget_year'] ? " — budget year {$data['budget_year']}" : ''),
+            subject: $pcAsset,
+            properties: ['disposal_method' => $data['disposal_method'] ?? null, 'budget_year' => $data['budget_year'] ?? null],
+        );
+
+        return redirect()->route('pc-assets.index')->with('success', "PC Asset {$pcAsset->computer_id} recorded as disposed.");
+    }
+
+    /**
+     * Bring an archived PC back into the active fleet (e.g. reissued or logged
+     * by mistake). Disposal fields are cleared so the record reads as live.
+     */
+    public function restore(Request $request, int $id)
+    {
+        $pcAsset = PcAsset::onlyTrashed()->findOrFail($id);
+
+        $pcAsset->restore();
+        $pcAsset->update([
+            'status'          => 'Free',
+            'retired_date'    => null,
+            'budget_year'     => null,
+            'disposal_method' => null,
+            'disposal_reason' => null,
+            'disposed_by'     => null,
+            'approved_by'     => null,
+            'modified_by'     => $request->user()->name,
+        ]);
+
+        ActivityLogger::log(
+            action: 'restored',
+            description: "Restored PC asset {$pcAsset->computer_id} ({$pcAsset->hostname}) from disposed",
+            subject: $pcAsset,
+        );
+
+        return redirect()->route('pc-assets.index', ['view' => 'disposed'])->with('success', "PC Asset {$pcAsset->computer_id} restored to the active list.");
+    }
+
+    /**
+     * Permanently delete an already-archived (disposed) PC record.
+     */
+    public function forceDestroy(int $id)
+    {
+        $pcAsset = PcAsset::onlyTrashed()->findOrFail($id);
+        $label = "{$pcAsset->computer_id} ({$pcAsset->hostname})";
+
+        ActivityLogger::log(
+            action: 'deleted',
+            description: "Permanently deleted disposed PC asset {$label}",
+            subject: $pcAsset,
+        );
+
+        $pcAsset->forceDelete();
+
+        return redirect()->route('pc-assets.index', ['view' => 'disposed'])->with('success', 'Disposed PC Asset permanently deleted.');
     }
 
     public function bulkDestroy(Request $request)
@@ -169,7 +278,7 @@ class PcAssetController extends Controller
                 description: "Deleted PC asset {$asset->computer_id} ({$asset->hostname}) [bulk]",
                 subject: $asset,
             );
-            $asset->delete();
+            $asset->forceDelete();
         }
 
         $count = $assets->count();

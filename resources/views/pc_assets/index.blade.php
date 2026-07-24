@@ -6,6 +6,9 @@
 @php
     $isAdmin = auth()->user()->isAdmin();
     $canEdit = auth()->user()->canEdit('pc_assets');
+    // "Disposed" view lists archived PCs (removed at budget year); the default
+    // view lists the live fleet.
+    $disposed = ($view ?? 'active') === 'disposed';
     $statusOrder = ['Active', 'Free', 'Damage', 'Retirement', 'Low Performance'];
     // Status totals still drive the KPI cards.
     $statusData = array_map(fn ($s) => (int) ($statusCounts[$s] ?? 0), $statusOrder);
@@ -126,6 +129,7 @@
         <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
     </div>
 
+    @unless($disposed)
     <div class="stat-row mb-3">
         <a class="stat-cell stat-link {{ $totalKpi ? 'is-active' : '' }}"
            href="{{ $base }}"
@@ -216,10 +220,12 @@
                         @forelse($recentLogs as $log)
                             @php
                                 $iconMap = [
-                                    'created'  => ['bi-plus-circle',   'success'],
-                                    'updated'  => ['bi-pencil-square', 'info'],
-                                    'deleted'  => ['bi-trash',         'danger'],
-                                    'imported' => ['bi-upload',        'warning'],
+                                    'created'  => ['bi-plus-circle',      'success'],
+                                    'updated'  => ['bi-pencil-square',    'info'],
+                                    'deleted'  => ['bi-trash',            'danger'],
+                                    'imported' => ['bi-upload',           'warning'],
+                                    'disposed' => ['bi-box-arrow-in-down', 'warning'],
+                                    'restored' => ['bi-arrow-counterclockwise', 'success'],
                                 ];
                                 [$icon, $tone] = $iconMap[$log->action] ?? ['bi-circle-fill', 'secondary'];
                             @endphp
@@ -238,16 +244,40 @@
             </div>
         </div>
     </div>
+    @endunless
+
+    @if($disposed)
+    <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-archive fs-5"></i>
+        <div class="small">
+            <strong>{{ number_format($assets->total()) }}</strong> PC{{ $assets->total() === 1 ? '' : 's' }}
+            @if(request('budget_year')) disposed in budget year <strong>{{ request('budget_year') }}</strong>@else removed from service (budget-year disposal)@endif.
+            They are kept for the record only and no longer count toward the active fleet.
+            You can <strong>Restore</strong> one back to the active list or delete it permanently.
+        </div>
+    </div>
+    @endif
 
     <div class="card mb-3">
         <div class="card-body py-3">
             <form method="GET" id="pcFilterForm" class="row g-2 align-items-center">
+                @if($disposed)<input type="hidden" name="view" value="disposed">@endif
                 <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="Search Computer ID, hostname, employee, serial...">
                     </div>
                 </div>
+                @if($disposed)
+                <div class="col-md-3">
+                    <select name="budget_year" class="form-select">
+                        <option value="">All Budget Years</option>
+                        @foreach($budgetYears as $by)
+                            <option value="{{ $by }}" @selected((string) request('budget_year') === (string) $by)>{{ $by }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @else
                 <div class="col-md-3">
                     <select name="status" class="form-select">
                         <option value="">All Statuses</option>
@@ -256,6 +286,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="col-md-3">
                     <select name="department" class="form-select">
                         <option value="">All Departments</option>
@@ -266,8 +297,8 @@
                 </div>
                 <div class="col-md-2 d-flex gap-2">
                     <button class="btn btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Filter</button>
-                    @if(request()->hasAny(['search','status','department']))
-                        <a href="{{ route('pc-assets.index') }}" class="btn btn-outline-secondary" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+                    @if(request()->hasAny(['search','status','department','budget_year']))
+                        <a href="{{ route('pc-assets.index', $disposed ? ['view' => 'disposed'] : []) }}" class="btn btn-outline-secondary" title="Clear filters"><i class="bi bi-x-lg"></i></a>
                     @endif
                 </div>
             </form>
@@ -300,7 +331,7 @@
     <form id="pcBulkForm" action="{{ route('pc-assets.bulk-destroy') }}" method="POST">
         @csrf @method('DELETE')
 
-        @if($canEdit)
+        @if($canEdit && !$disposed)
         <div id="pcBulkToolbar" class="card mb-2 d-none">
             <div class="card-body py-2 d-flex justify-content-between align-items-center">
                 <span class="small">
@@ -322,7 +353,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            @if($canEdit)
+                            @if($canEdit && !$disposed)
                                 <th style="width: 38px;">
                                     <input type="checkbox" id="pcSelectAll" class="form-check-input" title="Select all on page">
                                 </th>
@@ -332,6 +363,14 @@
                             <th class="{{ $colClass('hostname') }}">Hostname</th>
                             <th class="{{ $colClass('employee') }}">Employee</th>
                             <th class="{{ $colClass('status') }}">Status</th>
+                            @if($disposed)
+                                <th>Retired Date</th>
+                                <th>Budget Year</th>
+                                <th>Method</th>
+                                <th>Reason</th>
+                                <th>Disposed By</th>
+                                <th>Approved By</th>
+                            @endif
                             <th class="{{ $colClass('department') }}">Department</th>
                             <th class="{{ $colClass('location') }}">Location</th>
                             <th class="{{ $colClass('brand') }}">Brand / Model</th>
@@ -354,7 +393,7 @@
                     <tbody>
                         @forelse($assets as $i => $asset)
                             <tr>
-                                @if($canEdit)
+                                @if($canEdit && !$disposed)
                                     <td>
                                         <input type="checkbox" name="ids[]" value="{{ $asset->id }}" class="form-check-input pc-row-check">
                                     </td>
@@ -374,6 +413,14 @@
                                     }; @endphp
                                     <span class="badge bg-{{ $tone }}-subtle text-{{ $tone }}-emphasis">{{ $asset->status }}</span>
                                 </td>
+                                @if($disposed)
+                                    <td class="text-muted small text-nowrap">{{ $asset->retired_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>{{ $asset->budget_year ?: '—' }}</td>
+                                    <td>{{ $asset->disposal_method ?: '—' }}</td>
+                                    <td class="text-truncate" style="max-width: 220px;" title="{{ $asset->disposal_reason }}">{{ $asset->disposal_reason ?: '—' }}</td>
+                                    <td>{{ $asset->disposed_by ?: '—' }}</td>
+                                    <td>{{ $asset->approved_by ?: '—' }}</td>
+                                @endif
                                 <td class="{{ $colClass('department') }}">{{ $asset->department ?: '—' }}</td>
                                 <td class="{{ $colClass('location') }}">
                                     @if($asset->location === 'WFH')
@@ -413,9 +460,6 @@
                                 </td>
                                 <td class="{{ $colClass('remarks') }} text-truncate" style="max-width: 220px;" title="{{ $asset->remarks }}">{{ $asset->remarks ?: '—' }}</td>
                                 <td class="text-end text-nowrap pe-3">
-                                    <a href="{{ route('pc-assets.show', $asset) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
-                                    <a href="{{ route('pc-assets.edit', $asset) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
-                                    @if($canEdit)
                                     @php
                                         $pcDetail = trim(collect([
                                             trim(($asset->brand ?? '') . ' ' . ($asset->model ?? '')),
@@ -423,23 +467,47 @@
                                             $asset->department,
                                         ])->filter()->implode(' · '));
                                     @endphp
-                                    <button type="button" class="btn-icon-soft text-danger pc-delete-single"
-                                            title="Delete" aria-label="Delete"
-                                            data-id="{{ $asset->id }}"
-                                            data-label="{{ $asset->computer_id }}"
-                                            data-detail="{{ $pcDetail }}"><i class="bi bi-trash"></i></button>
+                                    <a href="{{ route('pc-assets.show', $asset) }}" class="btn-icon-soft" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
+                                    @if($disposed)
+                                        @if($canEdit)
+                                        <button type="button" class="btn-icon-soft text-success pc-restore-single"
+                                                title="Restore to active list" aria-label="Restore"
+                                                data-id="{{ $asset->id }}"
+                                                data-label="{{ $asset->computer_id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                        <button type="button" class="btn-icon-soft text-danger pc-forcedelete-single"
+                                                title="Delete permanently" aria-label="Delete permanently"
+                                                data-id="{{ $asset->id }}"
+                                                data-label="{{ $asset->computer_id }}"
+                                                data-detail="{{ $pcDetail }}"><i class="bi bi-trash"></i></button>
+                                        @endif
+                                    @else
+                                        <a href="{{ route('pc-assets.edit', $asset) }}" class="btn-icon-soft" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+                                        @if($canEdit)
+                                        <button type="button" class="btn-icon-soft text-warning pc-dispose-single"
+                                                title="Record disposal (budget-year removal)" aria-label="Dispose"
+                                                data-id="{{ $asset->id }}"
+                                                data-label="{{ $asset->computer_id }}"
+                                                data-detail="{{ $pcDetail }}"><i class="bi bi-box-arrow-in-down"></i></button>
+                                        <button type="button" class="btn-icon-soft text-danger pc-delete-single"
+                                                title="Delete" aria-label="Delete"
+                                                data-id="{{ $asset->id }}"
+                                                data-label="{{ $asset->computer_id }}"
+                                                data-detail="{{ $pcDetail }}"><i class="bi bi-trash"></i></button>
+                                        @endif
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $canEdit ? 23 : 22 }}" class="text-center py-5">
+                                <td colspan="30" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
-                                        <div class="fw-semibold">No PC assets found</div>
+                                        <div class="fw-semibold">{{ $disposed ? 'No disposed PCs' : 'No PC assets found' }}</div>
                                         <div class="small">
-                                            @if(request()->hasAny(['search','status','department']))
-                                                Try clearing the filters or <a href="{{ route('pc-assets.index') }}">view all</a>.
+                                            @if(request()->hasAny(['search','status','department','budget_year']))
+                                                Try clearing the filters or <a href="{{ route('pc-assets.index', $disposed ? ['view' => 'disposed'] : []) }}">view all</a>.
+                                            @elseif($disposed)
+                                                PCs you dispose (budget-year removal) will be listed here.
                                             @elseif($canEdit)
                                                 <a href="{{ route('pc-assets.create') }}">Add the first PC</a> to get started.
                                             @else
@@ -460,6 +528,68 @@
     <form id="pcSingleDeleteForm" method="POST" class="d-none">
         @csrf @method('DELETE')
     </form>
+    <form id="pcRestoreForm" method="POST" class="d-none">
+        @csrf
+    </form>
+    <form id="pcForceDeleteForm" method="POST" class="d-none">
+        @csrf @method('DELETE')
+    </form>
+
+    {{-- Dispose (budget-year removal) modal --}}
+    <div class="modal fade" id="disposePcModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="disposePcForm" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-box-arrow-in-down text-warning"></i> Record PC Disposal</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted">
+                            You are recording <strong id="disposePcLabel"></strong> as disposed. It will move to the
+                            <em>Disposed</em> list with the details below and leave the active fleet.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Retired / Removed date <span class="text-danger">*</span></label>
+                                <input type="date" name="retired_date" class="form-control" value="{{ now()->format('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Budget year</label>
+                                <input type="text" name="budget_year" class="form-control" value="{{ now()->format('Y') }}" placeholder="e.g. {{ now()->format('Y') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Disposal method</label>
+                                <select name="disposal_method" class="form-select">
+                                    <option value="">— Select —</option>
+                                    @foreach(\App\Models\PcAsset::DISPOSAL_METHODS as $m)
+                                        <option value="{{ $m }}">{{ $m }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Approved by</label>
+                                <input type="text" name="approved_by" class="form-control" placeholder="Who authorized removal">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Disposed by</label>
+                                <input type="text" name="disposed_by" class="form-control" value="{{ auth()->user()->name }}" placeholder="Who carried it out">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Reason</label>
+                                <textarea name="disposal_reason" class="form-control" rows="2" placeholder="e.g. beyond economic repair, too slow, end of life"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning"><i class="bi bi-box-arrow-in-down"></i> Record disposal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     @endif
 
     <div class="mt-3">{{ $assets->links() }}</div>
@@ -668,6 +798,58 @@
             const form = document.getElementById('pcSingleDeleteForm');
             if (!form) return;
             form.action = `{{ url('pc-assets') }}/${id}`;
+            form.submit();
+        });
+    });
+
+    // Dispose single (budget-year removal) → open modal, target the form
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.pc-dispose-single');
+        if (!btn) return;
+        const form = document.getElementById('disposePcForm');
+        const labelEl = document.getElementById('disposePcLabel');
+        const modalEl = document.getElementById('disposePcModal');
+        if (!form || !modalEl) return;
+        form.action = `{{ url('pc-assets') }}/${btn.dataset.id}/dispose`;
+        if (labelEl) labelEl.textContent = btn.dataset.label || 'this PC';
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    });
+
+    // Restore a disposed PC back to the active list
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.pc-restore-single');
+        if (!btn) return;
+        appConfirm({
+            title: 'Restore this PC?',
+            message: `Restore <strong>${appHtmlEscape(btn.dataset.label)}</strong> to the active list.`,
+            note: 'Its disposal details will be cleared and status set to Free.',
+            confirmLabel: 'Restore',
+        }).then((ok) => {
+            if (!ok) return;
+            const form = document.getElementById('pcRestoreForm');
+            if (!form) return;
+            form.action = `{{ url('pc-assets') }}/${btn.dataset.id}/restore`;
+            form.submit();
+        });
+    });
+
+    // Permanently delete a disposed PC
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.pc-forcedelete-single');
+        if (!btn) return;
+        const detail = btn.dataset.detail
+            ? `<br><small class="text-muted">${appHtmlEscape(btn.dataset.detail)}</small>`
+            : '';
+        appConfirm({
+            title: 'Delete permanently?',
+            message: `Permanently delete <strong>${appHtmlEscape(btn.dataset.label)}</strong>.${detail}`,
+            note: 'This removes the record for good and cannot be undone.',
+            confirmLabel: 'Delete permanently',
+        }).then((ok) => {
+            if (!ok) return;
+            const form = document.getElementById('pcForceDeleteForm');
+            if (!form) return;
+            form.action = `{{ url('pc-assets') }}/${btn.dataset.id}/force`;
             form.submit();
         });
     });
