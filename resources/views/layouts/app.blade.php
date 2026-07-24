@@ -36,7 +36,11 @@
         .card { border: 1px solid rgba(31, 38, 135, 0.08); border-radius: 0.85rem; }
         [data-bs-theme="dark"] .card { border-color: rgba(255, 255, 255, 0.06); }
         .sidebar {
-            min-height: 100vh;
+            /* Cap to the viewport so the inner .sidebar-scroll actually scrolls
+               when the menu is taller than the screen (e.g. admin menu on a 14"
+               laptop) — otherwise the bottom "Setting" items fall off-screen
+               with no way to reach them. */
+            height: 100vh;
             background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(22px) saturate(180%);
             -webkit-backdrop-filter: blur(22px) saturate(180%);

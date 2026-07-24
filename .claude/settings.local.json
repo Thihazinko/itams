@@ -256,7 +256,8 @@
       "Bash(grep -noE 'foreach\\\\\\(|endforeach|if \\\\\\(\\\\$__bag|if\\\\\\([^\\)]*\\\\\\): \\\\?>|if\\\\\\(.*\\\\\\):|elseif|else:| endif| endif;|endif;|endif ' 'C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\blade_compiled_check.php')",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\c3a8bb0a-700e-4c33-b5f4-8133cca8e152\\\\scratchpad\\\\compile_head.php\" 2>&1)",
       "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\c3a8bb0a-700e-4c33-b5f4-8133cca8e152\\\\scratchpad\\\\compile_test.php\" 2>&1)",
-      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\c3a8bb0a-700e-4c33-b5f4-8133cca8e152\\\\scratchpad\\\\render_test.php\")"
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan tinker \"C:\\\\Users\\\\BCMM049\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-infra-ninja\\\\c3a8bb0a-700e-4c33-b5f4-8133cca8e152\\\\scratchpad\\\\render_test.php\")",
+      "PowerShell(& C:\\\\xampp\\\\php\\\\php.exe C:\\\\xampp\\\\htdocs\\\\infra-ninja\\\\artisan view:clear 2>&1 | Select-Object -Last 1)"
     ]
   }
 }
