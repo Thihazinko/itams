@@ -12,6 +12,7 @@ use App\Http\Controllers\EmailMasterController;
 use App\Http\Controllers\FinancialPoController;
 use App\Http\Controllers\FinancialReceiptController;
 use App\Http\Controllers\GcpCostBreakdownController;
+use App\Http\Controllers\LicenseContractAttachmentController;
 use App\Http\Controllers\LicenseContractController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PcAssetController;
@@ -108,6 +109,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:licenses_contracts,view')->group(function () {
         Route::get('licenses-contracts/export', [LicenseContractController::class, 'export'])->name('licenses-contracts.export');
         Route::get('licenses-contracts/template', [LicenseContractController::class, 'template'])->name('licenses-contracts.template');
+        Route::get('licenses-contracts/{licenses_contract}/attachments/{attachment}/download', [LicenseContractAttachmentController::class, 'download'])
+            ->whereNumber('licenses_contract')->whereNumber('attachment')
+            ->name('licenses-contracts.attachments.download');
         Route::resource('licenses-contracts', LicenseContractController::class)
             ->parameters(['licenses-contracts' => 'licenses_contract'])
             ->only(['index', 'show'])
@@ -116,6 +120,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:licenses_contracts,edit')->group(function () {
         Route::post('licenses-contracts/import', [LicenseContractController::class, 'import'])->name('licenses-contracts.import');
         Route::delete('licenses-contracts/bulk', [LicenseContractController::class, 'bulkDestroy'])->name('licenses-contracts.bulk-destroy');
+        Route::post('licenses-contracts/{licenses_contract}/attachments', [LicenseContractAttachmentController::class, 'store'])
+            ->whereNumber('licenses_contract')->name('licenses-contracts.attachments.store');
+        Route::delete('licenses-contracts/{licenses_contract}/attachments/{attachment}', [LicenseContractAttachmentController::class, 'destroy'])
+            ->whereNumber('licenses_contract')->whereNumber('attachment')->name('licenses-contracts.attachments.destroy');
         Route::resource('licenses-contracts', LicenseContractController::class)
             ->parameters(['licenses-contracts' => 'licenses_contract'])
             ->except(['index', 'show']);

@@ -29,6 +29,8 @@
             $priceChange = ['label' => 'Down ' . ($pct !== null ? number_format($pct, 1) . '%' : ''), 'tone' => 'success', 'icon' => 'bi-arrow-down'];
         }
     }
+
+    $canEdit = auth()->user()->canEdit('licenses_contracts');
 @endphp
 
 <div class="page-header">
@@ -117,6 +119,72 @@
             </div>
             <div class="card-body">
                 <div style="white-space: pre-line;">{{ $item->remarks ?: '—' }}</div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-transparent d-flex align-items-center gap-2">
+                <i class="bi bi-paperclip text-primary"></i>
+                <strong>Attachments</strong>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">{{ $item->attachments->count() }}</span>
+                <span class="text-muted small ms-auto">Contract, invoice, renewal quote, etc.</span>
+            </div>
+            <div class="card-body">
+                @if($canEdit)
+                <form method="POST" action="{{ route('licenses-contracts.attachments.store', $item) }}" enctype="multipart/form-data" class="mb-3">
+                    @csrf
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small mb-1">File(s) <span class="text-danger">*</span></label>
+                            <input type="file" name="files[]" multiple required
+                                   class="form-control form-control-sm @error('files') is-invalid @enderror @error('files.*') is-invalid @enderror"
+                                   accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
+                            @error('files')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            @error('files.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Label <span class="text-muted">(optional)</span></label>
+                            <input type="text" name="label" value="{{ old('label') }}" class="form-control form-control-sm" placeholder="e.g. Signed contract, Invoice">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary btn-sm w-100"><i class="bi bi-upload"></i> Upload</button>
+                        </div>
+                    </div>
+                    <div class="form-text">PDF, image, Word, or Excel — up to 20 MB each. Select multiple to upload at once.</div>
+                </form>
+                @endif
+
+                @forelse($item->attachments as $file)
+                    <div class="d-flex align-items-center gap-2 py-2 @if(!$loop->last) border-bottom border-light-subtle @endif">
+                        <i class="bi {{ $file->icon }} fs-4 text-secondary"></i>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="text-truncate fw-semibold">{{ $file->display_name }}</div>
+                            <div class="text-muted small">
+                                @if($file->label && $file->original_name){{ $file->original_name }} &middot; @endif
+                                @if($file->human_size){{ $file->human_size }} &middot; @endif
+                                {{ $file->created_at?->format('Y-m-d') }}
+                                @if($file->uploaded_by) &middot; {{ $file->uploaded_by }} @endif
+                            </div>
+                        </div>
+                        <a href="{{ route('licenses-contracts.attachments.download', [$item, $file]) }}"
+                           class="btn btn-sm btn-outline-secondary" title="Download"><i class="bi bi-download"></i></a>
+                        @if($canEdit)
+                        <form method="POST" action="{{ route('licenses-contracts.attachments.destroy', [$item, $file]) }}" class="d-inline"
+                              data-app-confirm
+                              data-confirm-title="Delete this attachment?"
+                              data-confirm-message="Remove <strong>{{ e($file->display_name) }}</strong> from {{ e($item->software_name) }}."
+                              data-confirm-label="{{ e($file->display_name) }}">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger" title="Delete attachment"><i class="bi bi-trash"></i></button>
+                        </form>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-muted small mb-0 text-center py-2">
+                        <i class="bi bi-paperclip d-block mb-1 fs-4 opacity-50"></i>
+                        No files attached yet.@if($canEdit) Use the form above to add the contract, invoice, or renewal quote.@endif
+                    </p>
+                @endforelse
             </div>
         </div>
     </div>

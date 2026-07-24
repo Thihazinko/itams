@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 class LicenseContract extends Model
@@ -30,6 +31,15 @@ class LicenseContract extends Model
         'previous_cost' => 'decimal:2',
         'renewal_cost' => 'decimal:2',
     ];
+
+    /**
+     * Uploaded documents for this license/contract — the signed contract,
+     * invoice, renewal quotes, etc. Newest first.
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(LicenseContractAttachment::class)->latest();
+    }
 
     /**
      * How long this license/contract has been in use, from the start using date

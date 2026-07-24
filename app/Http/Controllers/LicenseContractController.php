@@ -102,6 +102,8 @@ class LicenseContractController extends Controller
 
     public function show(LicenseContract $licenses_contract)
     {
+        $licenses_contract->load('attachments');
+
         return view('licenses_contracts.show', ['item' => $licenses_contract]);
     }
 
