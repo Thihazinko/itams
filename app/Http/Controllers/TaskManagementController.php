@@ -204,11 +204,19 @@ class TaskManagementController extends Controller
         $month = (int) ($request->get('month') ?: now()->month);
         $month = max(1, min(12, $month));
 
+        // Optional custom day range (e.g. 11 Jan – 10 Feb). When both ends are
+        // valid it spans months and overrides the month/year picker; otherwise
+        // the list falls back to the selected month.
+        [$from, $to] = $this->resolveRange($request);
+        $isRange = $from && $to;
+
         $entries = TaskDailyEntry::query()
             ->with(['category:id,name,sort_order', 'task:id,name'])
             ->where('user_id', $target->id)
-            ->whereYear('work_date', $year)
-            ->whereMonth('work_date', $month)
+            ->when($isRange,
+                fn ($q) => $q->whereBetween('work_date', [$from->toDateString(), $to->toDateString()]),
+                fn ($q) => $q->whereYear('work_date', $year)->whereMonth('work_date', $month),
+            )
             ->orderBy('work_date')->orderBy('slot')
             ->get();
 
@@ -253,6 +261,9 @@ class TaskManagementController extends Controller
             'month'      => $month,
             'years'      => $this->yearOptions($year),
             'months'     => self::MONTHS,
+            'from'       => $from,
+            'to'         => $to,
+            'isRange'    => $isRange,
             'groups'     => $groups,
             'total'      => $total,
             'entryCount' => $entries->count(),
@@ -275,11 +286,17 @@ class TaskManagementController extends Controller
         $year  = (int) ($request->get('year') ?: now()->year);
         $month = (int) ($request->get('month') ?: now()->month);
         $month = max(1, min(12, $month));
-        $period = sprintf('%04d-%02d', $year, $month);
+
+        // Mirror the Monthly List: a custom day range overrides the month/year.
+        [$from, $to] = $this->resolveRange($request);
+        $isRange = $from && $to;
+        $period  = $isRange
+            ? $from->format('Ymd') . '-' . $to->format('Ymd')
+            : sprintf('%04d-%02d', $year, $month);
 
         if ($request->get('scope') === 'all') {
             abort_unless($viewer->isAdmin(), 403, 'Only admins can export all members.');
-            $members  = $this->exportMembers($year, $month);
+            $members  = $this->exportMembers($year, $month, $from, $to);
             $fileName = 'Daily-Task-All-Members-' . $period . '.xlsx';
         } else {
             [$target] = $this->resolveTarget($request, $viewer);
@@ -287,23 +304,30 @@ class TaskManagementController extends Controller
             $fileName = 'Daily-Task-' . Str::slug($target->name) . '-' . $period . '.xlsx';
         }
 
+        $periodLabel = $isRange
+            ? $from->format('j M Y') . ' – ' . $to->format('j M Y')
+            : Carbon::createFromDate($year, $month, 1)->format('F Y');
+
         ActivityLogger::log(
             action: 'exported',
             description: 'Exported Daily Task ' . ($request->get('scope') === 'all' ? 'for all members' : "for {$members->first()?->name}")
-                . ' — ' . Carbon::createFromDate($year, $month, 1)->format('F Y'),
+                . ' — ' . $periodLabel,
         );
 
-        return Excel::download(new TaskManagementMonthlyExport($members, $year, $month), $fileName);
+        return Excel::download(new TaskManagementMonthlyExport($members, $year, $month, $from, $to), $fileName);
     }
 
     /** Members for an all-members export: those granted the module plus anyone
-     *  who actually logged hours that month (e.g. an admin), by name. */
-    private function exportMembers(int $year, int $month)
+     *  who actually logged hours in the period (e.g. an admin), by name. */
+    private function exportMembers(int $year, int $month, ?Carbon $from = null, ?Carbon $to = null)
     {
         $members = User::taskMembers()->get();
 
         $loggedIds = TaskDailyEntry::query()
-            ->whereYear('work_date', $year)->whereMonth('work_date', $month)
+            ->when($from && $to,
+                fn ($q) => $q->whereBetween('work_date', [$from->toDateString(), $to->toDateString()]),
+                fn ($q) => $q->whereYear('work_date', $year)->whereMonth('work_date', $month),
+            )
             ->distinct()->pluck('user_id')->map(fn ($id) => (int) $id);
 
         $missing = $loggedIds->diff($members->pluck('id'));
@@ -426,6 +450,26 @@ class TaskManagementController extends Controller
         $canEdit = $viewer->isAdmin() || ($isSelf && $viewer->canEdit('task_daily'));
 
         return [$target, $canEdit];
+    }
+
+    /**
+     * Optional [from, to] day range from ?from=&to=. Returns [null, null] unless
+     * both parse as dates; reversed ends are swapped so the range is always valid.
+     */
+    private function resolveRange(Request $request): array
+    {
+        if (! $request->filled('from') || ! $request->filled('to')) {
+            return [null, null];
+        }
+
+        try {
+            $from = Carbon::parse($request->get('from'))->startOfDay();
+            $to   = Carbon::parse($request->get('to'))->startOfDay();
+        } catch (\Throwable) {
+            return [null, null];
+        }
+
+        return $from->gt($to) ? [$to, $from] : [$from, $to];
     }
 
     /** Selected date, defaulting to today; bad input falls back to today. */

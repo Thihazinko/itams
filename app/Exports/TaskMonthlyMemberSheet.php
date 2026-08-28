@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\TaskDailyEntry;
 use App\Models\User;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -29,6 +30,8 @@ class TaskMonthlyMemberSheet implements FromArray, WithHeadings, WithStyles, Wit
         protected int $year,
         protected int $month,
         protected string $sheetTitle,
+        protected ?Carbon $from = null,
+        protected ?Carbon $to = null,
     ) {
     }
 
@@ -50,8 +53,10 @@ class TaskMonthlyMemberSheet implements FromArray, WithHeadings, WithStyles, Wit
         $entries = TaskDailyEntry::query()
             ->with(['category:id,name,sort_order', 'task:id,name'])
             ->where('user_id', $this->member->id)
-            ->whereYear('work_date', $this->year)
-            ->whereMonth('work_date', $this->month)
+            ->when($this->from && $this->to,
+                fn ($q) => $q->whereBetween('work_date', [$this->from->toDateString(), $this->to->toDateString()]),
+                fn ($q) => $q->whereYear('work_date', $this->year)->whereMonth('work_date', $this->month),
+            )
             ->orderBy('work_date')->orderBy('slot')
             ->get();
 

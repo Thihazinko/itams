@@ -4,7 +4,11 @@
 
 @section('content')
 @php
-    $periodLabel = $months[$month] . ' ' . $year;
+    $periodLabel = $isRange
+        ? $from->format('j M Y') . ' – ' . $to->format('j M Y')
+        : $months[$month] . ' ' . $year;
+    // Where the "Open Daily Task" links land: the range start, else the 1st.
+    $openDate = $isRange ? $from->toDateString() : sprintf('%04d-%02d-01', $year, $month);
     // Hours may be fractional after edited time spans — trim trailing zeros.
     $fmt = function ($v) {
         $s = number_format((float) $v, 2, '.', '');
@@ -84,27 +88,33 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <div class="dropdown">
+            @php
+                // Export follows the active view: a custom range, else the month/year.
+                $exportPeriod = $isRange
+                    ? ['from' => $from->toDateString(), 'to' => $to->toDateString()]
+                    : ['year' => $year, 'month' => $month];
+            @endphp
             <button type="button" class="quick-action dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-download"></i> Export {{ $months[$month] }} {{ $year }}
+                <i class="bi bi-download"></i> Export {{ $periodLabel }}
                 <i class="bi bi-chevron-down ms-1 small opacity-75"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li>
-                    <a class="dropdown-item" href="{{ route('task-management.export', array_filter(['member' => $memberParam, 'year' => $year, 'month' => $month])) }}">
+                    <a class="dropdown-item" href="{{ route('task-management.export', array_filter(['member' => $memberParam] + $exportPeriod)) }}">
                         <i class="bi bi-person"></i> {{ $target->name }}{{ $target->id === auth()->id() ? ' (me)' : '' }}
                     </a>
                 </li>
                 @if($isAdmin)
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="{{ route('task-management.export', ['scope' => 'all', 'year' => $year, 'month' => $month]) }}">
+                        <a class="dropdown-item" href="{{ route('task-management.export', ['scope' => 'all'] + $exportPeriod) }}">
                             <i class="bi bi-people"></i> All members
                         </a>
                     </li>
                 @endif
             </ul>
         </div>
-        <a href="{{ route('task-management.index', array_filter(['member' => $memberParam, 'date' => sprintf('%04d-%02d-01', $year, $month)])) }}" class="quick-action"><i class="bi bi-calendar-check"></i> Daily Task</a>
+        <a href="{{ route('task-management.index', array_filter(['member' => $memberParam, 'date' => $openDate])) }}" class="quick-action"><i class="bi bi-calendar-check"></i> Daily Task</a>
         <a href="{{ route('task-management.summary', ['year' => $year, 'month' => $month]) }}" class="quick-action"><i class="bi bi-bar-chart-line"></i> Monthly Summary</a>
     </div>
 </div>
@@ -122,16 +132,31 @@
         <div class="vr d-none d-sm-block mx-1"></div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <select name="month" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()" aria-label="Month">
+            {{-- Picking a month/year clears any active range so we return to month mode. --}}
+            <select name="month" class="form-select form-select-sm" style="width: auto;" onchange="this.form.from.value='';this.form.to.value='';this.form.submit()" aria-label="Month">
                 @foreach($months as $num => $label)
                     <option value="{{ $num }}" @selected($num === $month)>{{ $label }}</option>
                 @endforeach
             </select>
-            <select name="year" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()" aria-label="Year">
+            <select name="year" class="form-select form-select-sm" style="width: auto;" onchange="this.form.from.value='';this.form.to.value='';this.form.submit()" aria-label="Year">
                 @foreach($years as $y)
                     <option value="{{ $y }}" @selected($y === $year)>{{ $y }}</option>
                 @endforeach
             </select>
+        </div>
+
+        <div class="vr d-none d-sm-block mx-1"></div>
+
+        {{-- Custom day range: overrides the month/year picker when both ends are set. --}}
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="form-label small text-muted mb-0"><i class="bi bi-calendar-range me-1"></i>Range</label>
+            <input type="date" name="from" value="{{ $isRange ? $from->toDateString() : '' }}" class="form-control form-control-sm" style="width: auto;" aria-label="From date">
+            <span class="text-muted small">to</span>
+            <input type="date" name="to" value="{{ $isRange ? $to->toDateString() : '' }}" class="form-control form-control-sm" style="width: auto;" aria-label="To date">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+            @if($isRange)
+                <a href="{{ route('task-management.monthly', array_filter(['member' => $memberParam, 'year' => $year, 'month' => $month])) }}" class="btn btn-sm btn-outline-secondary" title="Clear range">Clear</a>
+            @endif
         </div>
 
         @if($isAdmin && $members->isNotEmpty())
@@ -154,7 +179,7 @@
             <div class="mb-2"><i class="bi bi-calendar-x text-secondary" style="font-size: 2.25rem; opacity: .5;"></i></div>
             <h5 class="mb-1">Nothing logged for {{ $periodLabel }}</h5>
             <p class="text-muted mb-3">No daily task entries have been recorded for this period yet.</p>
-            <a href="{{ route('task-management.index', array_filter(['member' => $memberParam, 'date' => sprintf('%04d-%02d-01', $year, $month)])) }}" class="quick-action quick-action-primary">
+            <a href="{{ route('task-management.index', array_filter(['member' => $memberParam, 'date' => $openDate])) }}" class="quick-action quick-action-primary">
                 <i class="bi bi-pencil-square"></i> Open Daily Task
             </a>
         </div>

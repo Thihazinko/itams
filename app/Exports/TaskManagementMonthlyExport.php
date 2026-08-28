@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
@@ -17,6 +18,8 @@ class TaskManagementMonthlyExport implements WithMultipleSheets
         protected Collection $members,
         protected int $year,
         protected int $month,
+        protected ?Carbon $from = null,
+        protected ?Carbon $to = null,
     ) {
     }
 
@@ -29,7 +32,7 @@ class TaskManagementMonthlyExport implements WithMultipleSheets
             $title = $this->uniqueTitle($member->name, $seen);
             $seen[mb_strtolower($title)] = true;
 
-            $sheets[] = new TaskMonthlyMemberSheet($member, $this->year, $this->month, $title);
+            $sheets[] = new TaskMonthlyMemberSheet($member, $this->year, $this->month, $title, $this->from, $this->to);
         }
 
         return $sheets;
