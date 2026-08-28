@@ -14,14 +14,16 @@ RUN npm run build
 # under us — bump this deliberately rather than letting `-alpine` drift.
 FROM php:8.2-fpm-alpine3.20 AS app
 
-# Alpine package mirror. Defaults to the upstream CDN; override at build time if
-# that CDN is unreachable from the build host, e.g.:
-#   docker compose build --build-arg ALPINE_MIRROR=https://uk.alpinelinux.org/alpine app
-ARG ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine
+# Alpine package mirror. The upstream Fastly CDN (dl-cdn.alpinelinux.org) is
+# unreachable from the production host (connection refused / egress filtered),
+# so default to the kernel.org mirror, which that host can reach. Override at
+# build time for other environments, e.g.:
+#   docker compose build --build-arg ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine app
+ARG ALPINE_MIRROR=https://mirrors.edge.kernel.org/alpine
 
-# Point apk at the chosen mirror (no-op when it's the default), then install the
-# build deps with a few retries so a transient network/TLS blip doesn't fail the
-# whole image build.
+# Rewrite the base image's baked-in dl-cdn URLs to the chosen mirror, then
+# install the build deps with a few retries so a transient network blip doesn't
+# fail the whole image build.
 RUN set -eux; \
     sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${ALPINE_MIRROR}#g" /etc/apk/repositories; \
     for i in 1 2 3 4 5; do \
