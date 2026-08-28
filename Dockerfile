@@ -39,9 +39,18 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Composer deps first (better layer caching)
+# Composer deps first (better layer caching). The build host has a flaky path to
+# api.github.com (where Composer pulls GitHub dist zips), so cap parallel HTTP to
+# ease contention and retry a few times — cached packages persist across attempts
+# within this layer, so a retry only re-fetches whatever timed out.
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+ENV COMPOSER_MAX_PARALLEL_HTTP=6
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+        composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-progress && break; \
+        [ "$i" = 5 ] && echo "composer install failed after $i attempts" && exit 1; \
+        echo "composer install failed (attempt $i/5); retrying in 10s..."; sleep 10; \
+    done
 
 # Full source + built assets from stage 1
 COPY . .
